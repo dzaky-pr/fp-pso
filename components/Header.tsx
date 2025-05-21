@@ -7,17 +7,16 @@ function Header() {
       <nav>
         <ul className="flex space-x-6">
           <li className="flex items-center">
-            <Link
-              className="hover:text-text-hover"
-              href={"/"}
-            >
+            <Link className="hover:text-text-hover" href={"/"}>
               Home
             </Link>
           </li>
           <li>
-            <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
-              <Link href={"/add"}>Add Book</Link>
-            </button>
+            <Link href={"/add"}>
+              <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
+                Add Book
+              </button>
+            </Link>
           </li>
         </ul>
       </nav>

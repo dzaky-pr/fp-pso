@@ -15,19 +15,17 @@ function AddPage() {
     description: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     if (book) {
       const newBook: IBook = {
         ...book,
-        [name]:
-          name === "price" ? parseFloat(value) : value,
+        [name]: name === "price" ? parseFloat(value) : value,
       };
       setBook(newBook);
     }
@@ -35,6 +33,7 @@ function AddPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await putBookInDB(book);
       router.push("/");
@@ -42,6 +41,8 @@ function AddPage() {
     } catch (error) {
       console.log(error);
       setError("Failed to edit book");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,20 +54,12 @@ function AddPage() {
           {error}
         </div>
       )}
-      <form
-        onSubmit={handleSubmit}
-        className="my-5 w-full max-w-lg mx-auto"
-      >
-        <h2 className="text-2xl font-bold mb-6">
-          Add Book
-        </h2>
+      <form onSubmit={handleSubmit} className="my-5 w-full max-w-lg mx-auto">
+        <h2 className="text-2xl font-bold mb-6">Add Book</h2>
 
         {/* title */}
         <div className="mb-4">
-          <label
-            htmlFor="title"
-            className="block font-semibold"
-          >
+          <label htmlFor="title" className="block font-semibold">
             Title
           </label>
           <input
@@ -83,10 +76,7 @@ function AddPage() {
 
         {/* author */}
         <div className="mb-4">
-          <label
-            htmlFor="author"
-            className="block font-semibold"
-          >
+          <label htmlFor="author" className="block font-semibold">
             Author
           </label>
           <input
@@ -103,10 +93,7 @@ function AddPage() {
 
         {/* price */}
         <div className="mb-4">
-          <label
-            htmlFor="price"
-            className="block font-semibold"
-          >
+          <label htmlFor="price" className="block font-semibold">
             Price
           </label>
           <input
@@ -124,10 +111,7 @@ function AddPage() {
 
         {/* description */}
         <div className="mb-4">
-          <label
-            htmlFor="description"
-            className="block font-semibold"
-          >
+          <label htmlFor="description" className="block font-semibold">
             Description
           </label>
           <textarea
@@ -144,8 +128,9 @@ function AddPage() {
         <button
           type="submit"
           className="w-full py-3 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200"
+          disabled={loading}
         >
-          Add Book
+          {loading ? "Loading..." : "Add Book"}
         </button>
       </form>
     </div>
