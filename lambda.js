@@ -2,11 +2,11 @@
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBDocumentClient,
-  ScanCommand,
-  PutCommand,
-  GetCommand,
   DeleteCommand,
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  ScanCommand,
 } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
@@ -18,7 +18,7 @@ const getBook = async (id) => {
     new GetCommand({
       TableName: tablename,
       Key: { id: Number(id) },
-    })
+    }),
   );
   return result.Item || { message: "not found" };
 };
@@ -27,7 +27,7 @@ const getAllBooks = async () => {
   const result = await dynamo.send(
     new ScanCommand({
       TableName: tablename,
-    })
+    }),
   );
   return result.Items;
 };
@@ -43,7 +43,7 @@ const putBook = async (book) => {
         description: book.description,
         title: book.title,
       },
-    })
+    }),
   );
   return `PUT book ${book.id}`;
 };
@@ -53,7 +53,7 @@ const deleteBook = async (id) => {
     new DeleteCommand({
       TableName: tablename,
       Key: { id: Number(id) },
-    })
+    }),
   );
   return `Deleted Book ${id}`;
 };
@@ -73,17 +73,16 @@ export const handler = async (event) => {
       case "GET /books":
         body = await getAllBooks();
         break;
-      case "PUT /books":
+      case "PUT /books": {
         const data = JSON.parse(event.body);
         body = await putBook(data);
         break;
+      }
       case "DELETE /books/{id}":
         body = await deleteBook(event.pathParameters.id);
         break;
       default:
-        throw new Error(
-          `unSupported route: ${event.routeKey}`
-        );
+        throw new Error(`unSupported route: ${event.routeKey}`);
     }
   } catch (error) {
     statusCode = 400;

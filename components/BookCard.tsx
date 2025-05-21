@@ -1,4 +1,4 @@
-import { IBook } from "@/types";
+import type { IBook } from "@/types";
 import Link from "next/link";
 
 function BookCard({ book }: { book: IBook }) {

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { FiSun, FiMoon } from "react-icons/fi";
+import { FiMoon, FiSun } from "react-icons/fi";
 
 function Header() {
   const [isDark, setIsDark] = useState(false);
@@ -9,7 +9,7 @@ function Header() {
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
     const isInitiallyDark = saved === "dark" || (!saved && prefersDark);
 

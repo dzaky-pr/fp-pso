@@ -1,7 +1,7 @@
 import { getBooks } from "@/actions/data";
 import BookCard from "@/components/BookCard";
 import Header from "@/components/Header";
-import { IBook } from "@/types";
+import type { IBook } from "@/types";
 import Link from "next/link";
 import { FiPlus } from "react-icons/fi";
 

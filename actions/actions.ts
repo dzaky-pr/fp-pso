@@ -1,6 +1,6 @@
 "use server";
 
-import { IBook } from "@/types";
+import type { IBook } from "@/types";
 import { deleteBook, getBook, putBook } from "./data";
 
 export const getBookFromDB = async (id: number) => {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { IBook } from "@/types";
-import Header from "@/components/Header";
-import { useRouter } from "next/navigation";
 import { deleteBookInDB, getBookFromDB, putBookInDB } from "@/actions/actions";
+import Header from "@/components/Header";
+import type { IBook } from "@/types";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 function BookPage({ params }: { params: { id: number } }) {
   const [book, setBook] = useState<IBook | null>(null);
@@ -14,13 +14,13 @@ function BookPage({ params }: { params: { id: number } }) {
   const router = useRouter();
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     if (book) {
       const newBook: IBook = {
         ...book,
-        [name]: name === "price" ? parseFloat(value) : value,
+        [name]: name === "price" ? Number.parseFloat(value) : value,
       };
       setBook(newBook);
     }
@@ -29,7 +29,7 @@ function BookPage({ params }: { params: { id: number } }) {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const confirmed = window.confirm(
-      "Apakah Anda yakin ingin mengedit buku ini?"
+      "Apakah Anda yakin ingin mengedit buku ini?",
     );
     if (!confirmed) return;
     setLoading(true);
@@ -39,8 +39,8 @@ function BookPage({ params }: { params: { id: number } }) {
         router.push("/");
         router.refresh();
       }
-    } catch (error) {
-      console.log(error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       setError("Failed to edit book");
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ function BookPage({ params }: { params: { id: number } }) {
   const handleDeleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const confirmed = window.confirm(
-      "Apakah Anda yakin ingin menghapus buku ini?"
+      "Apakah Anda yakin ingin menghapus buku ini?",
     );
     if (!confirmed) return;
     setLoadingDelete(true);
@@ -60,8 +60,8 @@ function BookPage({ params }: { params: { id: number } }) {
         router.push("/");
         router.refresh();
       }
-    } catch (error) {
-      console.log(error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       setError("Failed to delete book");
     } finally {
       setLoadingDelete(false);

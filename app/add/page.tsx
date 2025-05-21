@@ -2,7 +2,7 @@
 
 import { putBookInDB } from "@/actions/actions";
 import Header from "@/components/Header";
-import { IBook } from "@/types";
+import type { IBook } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -19,13 +19,13 @@ function AddPage() {
   const router = useRouter();
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     if (book) {
       const newBook: IBook = {
         ...book,
-        [name]: name === "price" ? parseFloat(value) : value,
+        [name]: name === "price" ? Number.parseFloat(value) : value,
       };
       setBook(newBook);
     }
@@ -38,8 +38,8 @@ function AddPage() {
       await putBookInDB(book);
       router.push("/");
       router.refresh();
-    } catch (error) {
-      console.log(error);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       setError("Failed to edit book");
     } finally {
       setLoading(false);
