@@ -81,10 +81,10 @@ function BookPage({ params }: { params: { id: number } }) {
   }, [params.id, router]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-blue-50 dark:bg-zinc-900 text-text-color dark:text-white transition-colors duration-300">
       <Header />
       {error && (
-        <div className="my-5 w-full max-w-lg mx-auto bg-red-400 p-4 rounded-lg">
+        <div className="my-5 w-full max-w-lg mx-auto bg-red-400 text-white p-4 rounded-lg shadow-md">
           {error}
         </div>
       )}
@@ -92,13 +92,16 @@ function BookPage({ params }: { params: { id: number } }) {
         <div>
           <form
             onSubmit={handleEditSubmit}
-            className="my-5 w-full max-w-lg mx-auto"
+            className="my-10 w-full max-w-lg mx-auto p-6 rounded-2xl bg-white/40 dark:bg-white/10 border border-white/30 dark:border-white/20 backdrop-blur-md shadow-xl transition-all"
           >
-            <h2 className="text-2xl font-bold mb-6">Edit Book</h2>
+            <h2 className="text-3xl font-bold mb-6 text-center">Edit Book</h2>
 
-            {/* title */}
+            {/* Title */}
             <div className="mb-4">
-              <label htmlFor="title" className="block font-semibold">
+              <label
+                htmlFor="title"
+                className="block font-semibold text-gray-800 dark:text-gray-200"
+              >
                 Title
               </label>
               <input
@@ -107,15 +110,17 @@ function BookPage({ params }: { params: { id: number } }) {
                 name="title"
                 value={book.title}
                 onChange={handleChange}
-                placeholder="Enter Book Title"
-                className="w-full p-2 mt-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-text-color"
+                className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
                 required
               />
             </div>
 
-            {/* author */}
+            {/* Author */}
             <div className="mb-4">
-              <label htmlFor="author" className="block font-semibold">
+              <label
+                htmlFor="author"
+                className="block font-semibold text-gray-800 dark:text-gray-200"
+              >
                 Author
               </label>
               <input
@@ -124,15 +129,17 @@ function BookPage({ params }: { params: { id: number } }) {
                 name="author"
                 value={book.author}
                 onChange={handleChange}
-                placeholder="Enter Author's Name"
-                className="w-full p-2 mt-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-text-color"
+                className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
                 required
               />
             </div>
 
-            {/* price */}
+            {/* Price */}
             <div className="mb-4">
-              <label htmlFor="price" className="block font-semibold">
+              <label
+                htmlFor="price"
+                className="block font-semibold text-gray-800 dark:text-gray-200"
+              >
                 Price
               </label>
               <input
@@ -142,15 +149,17 @@ function BookPage({ params }: { params: { id: number } }) {
                 step="0.01"
                 value={book.price}
                 onChange={handleChange}
-                placeholder="Enter Book Price"
-                className="w-full p-2 mt-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-text-color"
+                className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
                 required
               />
             </div>
 
-            {/* description */}
-            <div className="mb-4">
-              <label htmlFor="description" className="block font-semibold">
+            {/* Description */}
+            <div className="mb-6">
+              <label
+                htmlFor="description"
+                className="block font-semibold text-gray-800 dark:text-gray-200"
+              >
                 Description
               </label>
               <textarea
@@ -158,35 +167,36 @@ function BookPage({ params }: { params: { id: number } }) {
                 name="description"
                 value={book.description}
                 onChange={handleChange}
-                placeholder="Enter Book Description"
-                className="w-full p-2 mt-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-text-color"
+                className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
                 rows={4}
                 required
               />
             </div>
+
             <button
               type="submit"
-              className="w-full py-3 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200"
+              className="w-full py-3 bg-btn-color text-white rounded-xl hover:bg-text-hover transition duration-300 shadow-md"
               disabled={loading}
             >
-              {loading ? "Loading..." : "Edit Book"}
+              {loading ? "Loading..." : "Update Book"}
             </button>
           </form>
+
           <form
             onSubmit={handleDeleteSubmit}
             className="my-5 w-full max-w-lg mx-auto"
           >
             <button
               type="submit"
-              className="w-full py-3 bg-red-700 text-white rounded hover:bg-red-600 transition duration-200"
+              className="w-full py-3 bg-red-700 text-white rounded-xl hover:bg-red-600 transition duration-300 shadow-md"
               disabled={loadingDelete}
             >
-              {loadingDelete ? "Loading..." : "Delete Book"}
+              {loadingDelete ? "Deleting..." : "Delete Book"}
             </button>
           </form>
         </div>
       ) : (
-        <div> loading ...</div>
+        <div className="text-center text-gray-500 py-20">Loading...</div>
       )}
     </div>
   );

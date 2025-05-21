@@ -1,24 +1,57 @@
+"use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { FiSun, FiMoon } from "react-icons/fi";
 
 function Header() {
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+    const isInitiallyDark = saved === "dark" || (!saved && prefersDark);
+
+    document.documentElement.classList.toggle("dark", isInitiallyDark);
+    setIsDark(isInitiallyDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = !isDark;
+    document.documentElement.classList.toggle("dark", newTheme);
+    localStorage.setItem("theme", newTheme ? "dark" : "light");
+    setIsDark(newTheme);
+  };
+
   return (
-    <header className="flex justify-between items-center py-6 px-10 shadow-md">
-      <h1 className="text-3xl font-bold">Book Library</h1>
-      <nav>
-        <ul className="flex space-x-6">
-          <li className="flex items-center">
-            <Link className="hover:text-text-hover" href={"/"}>
-              Home
-            </Link>
-          </li>
-          <li>
-            <Link href={"/add"}>
-              <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
-                Add Book
-              </button>
-            </Link>
-          </li>
-        </ul>
+    <header className="flex justify-between items-center py-6 px-10 shadow-md dark:shadow-slate-800 transition-colors duration-300">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        Book Library
+      </h1>
+      <nav className="flex items-center space-x-6">
+        <Link
+          href="/"
+          className="text-text-color dark:text-white hover:text-text-hover dark:hover:text-gray-300 transition-colors"
+        >
+          Home
+        </Link>
+        <Link href={"/add"}>
+          <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
+            Add Book
+          </button>
+        </Link>
+        <button
+          onClick={toggleTheme}
+          aria-label="Toggle Theme"
+          className="ml-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          {isDark ? (
+            <FiSun size={20} className="text-yellow-400" />
+          ) : (
+            <FiMoon size={20} className="text-gray-700" />
+          )}
+        </button>
       </nav>
     </header>
   );
