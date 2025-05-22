@@ -11,7 +11,12 @@ function BookCard({ book }: { book: IBook }) {
         by {book.author}
       </p>
       <div className="mt-2 text-xl font-semibold text-blue-700 dark:text-blue-300">
-        ${book.price.toFixed(2)}
+        {new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(book.price)}
       </div>
       <Link href={`/${book.id}`}>
         <button className="mt-4 py-2 px-4 bg-btn-color text-white rounded-lg hover:bg-text-hover transition duration-200">

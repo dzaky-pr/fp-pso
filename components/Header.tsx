@@ -9,7 +9,7 @@ function Header() {
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
+      "(prefers-color-scheme: dark)"
     ).matches;
     const isInitiallyDark = saved === "dark" || (!saved && prefersDark);
 
@@ -27,7 +27,7 @@ function Header() {
   return (
     <header className="flex justify-between items-center py-6 px-10 shadow-md dark:shadow-slate-800 transition-colors duration-300">
       <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-        Book Library
+        <Link href="/">Book Library</Link>
       </h1>
       <nav className="flex items-center space-x-6">
         <Link
