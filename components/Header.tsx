@@ -9,7 +9,7 @@ function Header() {
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
     const isInitiallyDark = saved === "dark" || (!saved && prefersDark);
 

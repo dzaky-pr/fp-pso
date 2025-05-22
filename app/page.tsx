@@ -1,5 +1,5 @@
-import { getBooks } from '@/actions/data';
-import BookList from '@/components/BookList';
+import { getBooks } from "@/actions/data";
+import BookList from "@/components/BookList";
 import Header from "@/components/Header";
 import type { IBook } from "@/types";
 

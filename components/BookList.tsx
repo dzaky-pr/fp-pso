@@ -13,7 +13,7 @@ export default function BookList({ books }: { books: IBook[] }) {
 
   const handleSearch = (query: string) => {
     const filtered = books.filter((book) =>
-      book.title.toLowerCase().includes(query.toLowerCase())
+      book.title.toLowerCase().includes(query.toLowerCase()),
     );
     setFilteredBooks(filtered);
   };
