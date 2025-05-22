@@ -7,7 +7,6 @@ import { FiPlus } from "react-icons/fi";
 import BookCard from "./BookCard";
 import SearchBar from "./SearchBar";
 
-
 export default function BookList({ books }: { books: IBook[] }) {
   const [filteredBooks, setFilteredBooks] = useState<IBook[]>(books);
 
