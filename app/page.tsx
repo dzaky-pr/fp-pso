@@ -7,7 +7,7 @@ export default async function Home() {
   const books: IBook[] = (await getBooks()).data;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-zinc-900 dark:to-zinc-800 transition-colors duration-300">
+    <div className="min-h-screen bg-linear-to-b from-white to-blue-50 dark:from-zinc-900 dark:to-zinc-800 transition-colors duration-300">
       <Header />
 
       <main className="py-12 px-6 md:px-12 lg:px-24">
