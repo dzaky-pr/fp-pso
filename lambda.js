@@ -10,6 +10,7 @@ import {
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
 const tablename = "books";
+
 /* ──────────────────────────
    CRUD helper
 ────────────────────────── */
@@ -53,11 +54,12 @@ const deleteBook = async (id) => {
 ────────────────────────── */
 export const handler = async (event) => {
   /* ====== BLOK TEST ERROR ====== */
-  const wantError =
+  const forceError =
     event?.queryStringParameters?.forceError === "1" ||
-    event?.headers?.["X-Force-Error"] === "true";
+    event?.headers?.["X-Force-Error"]?.toLowerCase?.() === "true" ||
+    event?.headers?.["x-force-error"]?.toLowerCase?.() === "true";
 
-  if (wantError) {
+  if (forceError) {
     console.error("🔥 Forced test error for CloudWatch");
     throw new Error("Forced error → should trip alarm");
   }
