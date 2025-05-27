@@ -1,5 +1,3 @@
-// code to be pasted in aws lambda
-
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DeleteCommand,
@@ -11,24 +9,19 @@ import {
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-const tablename = "books"; // change to your table name
-
+const tablename = "books";
+/* ──────────────────────────
+   CRUD helper
+────────────────────────── */
 const getBook = async (id) => {
   const result = await dynamo.send(
-    new GetCommand({
-      TableName: tablename,
-      Key: { id: Number(id) },
-    }),
+    new GetCommand({ TableName: tablename, Key: { id: Number(id) } }),
   );
   return result.Item || { message: "not found" };
 };
 
 const getAllBooks = async () => {
-  const result = await dynamo.send(
-    new ScanCommand({
-      TableName: tablename,
-    }),
-  );
+  const result = await dynamo.send(new ScanCommand({ TableName: tablename }));
   return result.Items;
 };
 
@@ -50,20 +43,29 @@ const putBook = async (book) => {
 
 const deleteBook = async (id) => {
   await dynamo.send(
-    new DeleteCommand({
-      TableName: tablename,
-      Key: { id: Number(id) },
-    }),
+    new DeleteCommand({ TableName: tablename, Key: { id: Number(id) } }),
   );
   return `Deleted Book ${id}`;
 };
 
+/* ──────────────────────────
+   Lambda handler
+────────────────────────── */
 export const handler = async (event) => {
+  /* ====== BLOK TEST ERROR ====== */
+  const wantError =
+    event?.queryStringParameters?.forceError === "1" ||
+    event?.headers?.["X-Force-Error"] === "true";
+
+  if (wantError) {
+    console.error("🔥 Forced test error for CloudWatch");
+    throw new Error("Forced error → should trip alarm");
+  }
+  /* ====== END TEST ERROR BLOCK === */
+
   let body;
   let statusCode = 200;
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  const headers = { "Content-Type": "application/json" };
 
   try {
     switch (event.routeKey) {
@@ -82,7 +84,7 @@ export const handler = async (event) => {
         body = await deleteBook(event.pathParameters.id);
         break;
       default:
-        throw new Error(`unSupported route: ${event.routeKey}`);
+        throw new Error(`Unsupported route: ${event.routeKey}`);
     }
   } catch (error) {
     statusCode = 400;
@@ -91,9 +93,5 @@ export const handler = async (event) => {
     body = JSON.stringify(body);
   }
 
-  return {
-    statusCode,
-    body,
-    headers,
-  };
+  return { statusCode, body, headers };
 };
