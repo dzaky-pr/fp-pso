@@ -1,2 +1,16 @@
 #!/usr/bin/env sh
-. "$(dirname "$0")/h"
+
+GREEN='\033[0;32m'
+CYAN='\033[1;36m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo "${CYAN}🔍 Memvalidasi pesan commit menggunakan commitlint...${NC}"
+
+npx --no-install commitlint --edit "$1"
+if [ $? -ne 0 ]; then
+  echo "${RED}❌ Pesan commit tidak valid menurut aturan commitlint! Commit dibatalkan.${NC}"
+  exit 1
+fi
+
+echo "${GREEN}✅ Pesan commit valid.${NC}"
