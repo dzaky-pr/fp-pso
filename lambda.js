@@ -54,14 +54,19 @@ const deleteBook = async (id) => {
 ────────────────────────── */
 export const handler = async (event) => {
   /* ====== BLOK TEST ERROR ====== */
+  console.log("🔥 [DEBUG] headers:", JSON.stringify(event.headers));
+  console.log("🔥 [DEBUG] query:", JSON.stringify(event.queryStringParameters));
+
   const forceError =
     event?.queryStringParameters?.forceError === "1" ||
     event?.headers?.["X-Force-Error"]?.toLowerCase?.() === "true" ||
     event?.headers?.["x-force-error"]?.toLowerCase?.() === "true";
 
+  console.log("🔥 [DEBUG] forceError evaluated as:", forceError);
+
   if (forceError) {
-    console.error("🔥 Forced test error for CloudWatch");
-    throw new Error("Forced error → should trip alarm");
+    console.error("🔥 Forced test error triggered");
+    throw new Error("🔥 Forced error → should trip alarm");
   }
   /* ====== END TEST ERROR BLOCK === */
 
@@ -91,6 +96,7 @@ export const handler = async (event) => {
   } catch (error) {
     statusCode = 400;
     body = error.message;
+    console.error("🔥 [ERROR]", error); // log detail error juga
   } finally {
     body = JSON.stringify(body);
   }
