@@ -9,7 +9,7 @@ import {
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-const tablename = "books";
+const tablename = process.env.TABLE_NAME || "books";
 
 /* ──────────────────────────
    CRUD helper
@@ -53,47 +53,48 @@ const deleteBook = async (id) => {
    Lambda handler
 ────────────────────────── */
 export const handler = async (event) => {
-  /* ====== BLOK TEST ERROR ====== */
-  const forceError =
-    event?.queryStringParameters?.forceError === "1" ||
-    event?.headers?.["X-Force-Error"]?.toLowerCase?.() === "true" ||
-    event?.headers?.["x-force-error"]?.toLowerCase?.() === "true";
-
-  if (forceError) {
-    console.error("🔥 Forced test error for CloudWatch");
-    throw new Error("Forced error → should trip alarm");
-  }
-  /* ====== END TEST ERROR BLOCK === */
-
-  let body;
-  let statusCode = 200;
-  const headers = { "Content-Type": "application/json" };
+  const {
+    routeKey,
+    requestContext: { http },
+  } = event;
+  let body,
+    statusCode = 200;
 
   try {
-    switch (event.routeKey) {
-      case "GET /books/{id}":
-        body = await getBook(event.pathParameters.id);
-        break;
-      case "GET /books":
-        body = await getAllBooks();
-        break;
-      case "PUT /books": {
-        const data = JSON.parse(event.body);
-        body = await putBook(data);
-        break;
+    if (routeKey === "ANY /books") {
+      switch (http.method) {
+        case "GET":
+          body = await getAllBooks();
+          break;
+        case "PUT":
+        case "POST":
+          body = await putBook(JSON.parse(event.body));
+          break;
+        default:
+          throw new Error(`Unsupported ${http.method} on /books`);
       }
-      case "DELETE /books/{id}":
-        body = await deleteBook(event.pathParameters.id);
-        break;
-      default:
-        throw new Error(`Unsupported route: ${event.routeKey}`);
+    } else if (routeKey === "ANY /books/{id}") {
+      const id = event.pathParameters.id;
+      switch (http.method) {
+        case "GET":
+          body = await getBook(id);
+          break;
+        case "DELETE":
+          body = await deleteBook(id);
+          break;
+        default:
+          throw new Error(`Unsupported ${http.method} on /books/{id}`);
+      }
+    } else {
+      throw new Error(`Unsupported route: ${routeKey}`);
     }
-  } catch (error) {
+  } catch (e) {
     statusCode = 400;
-    body = error.message;
-  } finally {
-    body = JSON.stringify(body);
+    body = e.message;
   }
-
-  return { statusCode, body, headers };
+  return {
+    statusCode,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
 };

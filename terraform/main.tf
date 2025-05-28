@@ -209,7 +209,7 @@ resource "aws_cloudwatch_log_group" "lambda_log_group" {
 
 # --- AWS Lambda Function ---
 resource "aws_lambda_function" "book_library_lambda" {
-  function_name = var.lambda_function_name
+  function_name = "${var.lambda_function_name}-${random_id.suffix.hex}"
   handler       = "lambda.handler" # Assumes lambda.js exports 'handler' [cite: 35]
   runtime       = "nodejs18.x"     # Choose a suitable Node.js runtime
   role          = aws_iam_role.lambda_exec_role.arn
@@ -220,7 +220,7 @@ resource "aws_lambda_function" "book_library_lambda" {
 
   environment {
     variables = {
-      TABLE_NAME = var.table_name # Pass table name as env var (optional, as it's hardcoded in lambda.js) [cite: 31]
+      TABLE_NAME = aws_dynamodb_table.books_table.name # Pass table name as env var (optional, as it's hardcoded in lambda.js) [cite: 31]
     }
   }
 
@@ -243,36 +243,37 @@ resource "aws_apigatewayv2_api" "http_api" {
   description   = "API for the Book Library App"
 }
 
-resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id           = aws_apigatewayv2_api.http_api.id
-  integration_type = "AWS_PROXY" # Use Lambda Proxy integration
-  integration_uri  = aws_lambda_function.book_library_lambda.invoke_arn
-  payload_format_version = "2.0" # Matches HTTP API default
+# resource "aws_apigatewayv2_deployment" "http_api_deployment" {
+#   api_id = aws_apigatewayv2_api.http_api.id
+
+#   depends_on = [
+#     aws_apigatewayv2_route.get_books,
+#     aws_apigatewayv2_route.get_book_by_id,
+#     aws_apigatewayv2_route.put_book,
+#     aws_apigatewayv2_route.delete_book
+#   ]
+# }
+
+# Single Lambda proxy integration for all /books routes
+resource "aws_apigatewayv2_integration" "lambda_proxy" {
+  api_id                 = aws_apigatewayv2_api.http_api.id
+  integration_type       = "AWS_PROXY"              # Lambda proxy
+  integration_uri        = aws_lambda_function.book_library_lambda.invoke_arn
+  payload_format_version = "2.0"                    # HTTP API default for Lambda
 }
 
-# Define routes based on lambda.js
-resource "aws_apigatewayv2_route" "get_books" {
+# Catch-all route for /books
+resource "aws_apigatewayv2_route" "books" {
   api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /books"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+  route_key = "ANY /books"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_proxy.id}"
 }
 
-resource "aws_apigatewayv2_route" "get_book_by_id" {
+# Catch-all route for /books/{id}
+resource "aws_apigatewayv2_route" "books_by_id" {
   api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /books/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
-}
-
-resource "aws_apigatewayv2_route" "put_book" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "PUT /books"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
-}
-
-resource "aws_apigatewayv2_route" "delete_book" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "DELETE /books/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+  route_key = "ANY /books/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_proxy.id}"
 }
 
 resource "aws_cloudwatch_log_group" "api_gw_logs" {
@@ -291,6 +292,7 @@ resource "aws_lambda_permission" "api_gw_permission" {
 }
 
 # --- SNS Topic for Alerts ---
+
 resource "aws_sns_topic" "lambda_errors" {
   name = var.sns_topic_name
 }
@@ -335,6 +337,15 @@ resource "aws_security_group" "app_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "App (Port 3000)"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"] # Allow IPv6 traffic
   }
 
   egress {
