@@ -416,15 +416,30 @@ resource "aws_instance" "production" {
   }
 
   user_data = <<-EOF
-              #!/bin/bash
-              apt update
-              apt install -y awscli nodejs npm
+              #!/bin/bash -xe
+              sudo apt update
+              sudo apt install -y awscli git curl
+
+              # Install Node.js from NodeSource
+              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+              sudo apt install -y nodejs
+
+              # Switch to ubuntu home
+              mkdir -p /home/ubuntu
               cd /home/ubuntu
+
+              # Clone repo and set up app
               git clone "https://github.com/dzaky-pr/fp-pso.git"
               cd fp-pso
+
+              # Create .env file
+              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" > .env
+
+              # Install dependencies and build
               npm install --omit=dev
               npm run build
-              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" > .env.local
+
+              # Run the app
               npm run start
               EOF
 }
