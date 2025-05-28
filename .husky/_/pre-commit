@@ -1,2 +1,24 @@
 #!/usr/bin/env sh
-. "$(dirname "$0")/h"
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[1;36m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+run_cmd() {
+  echo "${CYAN}👉 Menjalankan: $1...${NC}"
+  eval "$1"
+  if [ $? -ne 0 ]; then
+    echo "${RED}❌ Perintah '$1' gagal! Commit dibatalkan.${NC}"
+    exit 1
+  else
+    echo "${GREEN}✅ Perintah '$1' selesai dengan sukses.${NC}"
+  fi
+}
+
+run_cmd "npm run lint"
+run_cmd "npm run format"
+run_cmd "npm run check"
+
+echo "${GREEN}🎉 Semua pemeriksaan sukses! Commit siap untuk dikirim.${NC}"
