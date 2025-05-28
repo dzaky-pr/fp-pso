@@ -26,7 +26,7 @@ output "cd_secret_access_key" {
 # Output Lambda API Setup
 output "api_gateway_url" {
   description = "The invoke URL for the API Gateway"
-  value       = aws_apigatewayv2_api.http_api.api_endpoint
+  value       = aws_apigatewayv2_api.api_books.api_endpoint
 }
 
 output "artifact_bucket_name" {

@@ -59,11 +59,7 @@ resource "aws_dynamodb_table" "books_table" {
     name = "id"
     type = "N" # N for Number, based on lambda.js [cite: 32, 34]
   }
-
-  server_side_encryption {
-    enabled = true
-  }
-
+  
   tags = {
     Name        = "${var.table_name}-${random_id.suffix.hex}"
     Environment = "Dev"
@@ -236,44 +232,49 @@ resource "aws_lambda_function" "book_library_lambda" {
 }
 
 # --- API Gateway (HTTP API) ---
-resource "aws_apigatewayv2_api" "http_api" {
-  name          = "${var.api_name}-${random_id.suffix.hex}"
+resource "aws_apigatewayv2_api" "api_books" {
+  name          = "BooksAPI-${random_id.suffix.hex}"
   protocol_type = "HTTP"
-  target        = aws_lambda_function.book_library_lambda.arn
-  description   = "API for the Book Library App"
 }
 
-# resource "aws_apigatewayv2_deployment" "http_api_deployment" {
-#   api_id = aws_apigatewayv2_api.http_api.id
-
-#   depends_on = [
-#     aws_apigatewayv2_route.get_books,
-#     aws_apigatewayv2_route.get_book_by_id,
-#     aws_apigatewayv2_route.put_book,
-#     aws_apigatewayv2_route.delete_book
-#   ]
-# }
+resource "aws_apigatewayv2_stage" "api_books_stage" {
+  api_id      = aws_apigatewayv2_api.api_books.id
+  name        = "$default"
+  auto_deploy = true
+}
 
 # Single Lambda proxy integration for all /books routes
-resource "aws_apigatewayv2_integration" "lambda_proxy" {
-  api_id                 = aws_apigatewayv2_api.http_api.id
-  integration_type       = "AWS_PROXY"              # Lambda proxy
+resource "aws_apigatewayv2_integration" "books_integration" {
+  api_id                 = aws_apigatewayv2_api.api_books.id
+  integration_type       = "AWS_PROXY"
   integration_uri        = aws_lambda_function.book_library_lambda.invoke_arn
-  payload_format_version = "2.0"                    # HTTP API default for Lambda
+  payload_format_version = "2.0"
 }
 
-# Catch-all route for /books
-resource "aws_apigatewayv2_route" "books" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "ANY /books"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_proxy.id}"
+
+# Define routes based on lambda.js
+resource "aws_apigatewayv2_route" "get_books" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "GET /books"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
 }
 
-# Catch-all route for /books/{id}
-resource "aws_apigatewayv2_route" "books_by_id" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "ANY /books/{id}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_proxy.id}"
+resource "aws_apigatewayv2_route" "get_book_by_id" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "GET /books/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "put_book" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "PUT /books"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "delete_book" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "DELETE /books/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
 }
 
 resource "aws_cloudwatch_log_group" "api_gw_logs" {
@@ -282,14 +283,22 @@ resource "aws_cloudwatch_log_group" "api_gw_logs" {
 }
 
 # --- Lambda Permission for API Gateway ---
-resource "aws_lambda_permission" "api_gw_permission" {
-  statement_id  = "AllowAPIGatewayInvoke"
+resource "aws_lambda_permission" "allow_api_books" {
+  statement_id  = "AllowBooksAPIInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.book_library_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-
-  source_arn = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/books"
 }
+
+resource "aws_lambda_permission" "allow_api_books_detail" {
+  statement_id  = "AllowBooksDetailAPIInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.book_library_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/books/{id}"
+}
+
 
 # --- SNS Topic for Alerts ---
 
@@ -387,11 +396,11 @@ resource "aws_instance" "staging" {
               apt update
               apt install -y awscli nodejs npm
               cd /home/ubuntu
-              mkdir app && cd app
-              aws s3 cp s3://${aws_s3_bucket.artifact.bucket}/latest.txt .
-              VERSION=$(cat latest.txt)
-              aws s3 sync s3://${aws_s3_bucket.artifact.bucket}/$VERSION . --exact-timestamps
+              git clone "https://github.com/dzaky-pr/fp-pso.git"
+              cd fp-pso
               npm install --omit=dev
+              npm run build
+              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" > .env.local
               npm run start
               EOF
 }
@@ -411,11 +420,11 @@ resource "aws_instance" "production" {
               apt update
               apt install -y awscli nodejs npm
               cd /home/ubuntu
-              mkdir app && cd app
-              aws s3 cp s3://${aws_s3_bucket.artifact.bucket}/latest.txt .
-              VERSION=$(cat latest.txt)
-              aws s3 sync s3://${aws_s3_bucket.artifact.bucket}/$VERSION . --exact-timestamps
+              git clone "https://github.com/dzaky-pr/fp-pso.git"
+              cd fp-pso
               npm install --omit=dev
+              npm run build
+              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" > .env.local
               npm run start
               EOF
 }

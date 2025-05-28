@@ -1,11 +1,11 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
   DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
   ScanCommand,
-} from "@aws-sdk/lib-dynamodb";
+} = require("@aws-sdk/lib-dynamodb");
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
@@ -52,49 +52,50 @@ const deleteBook = async (id) => {
 /* ──────────────────────────
    Lambda handler
 ────────────────────────── */
-export const handler = async (event) => {
-  const {
-    routeKey,
-    requestContext: { http },
-  } = event;
-  let body,
-    statusCode = 200;
+const handler = async (event) => {
+  /* ====== BLOK TEST ERROR ====== */
+  const forceError =
+    event?.queryStringParameters?.forceError === "1" ||
+    event?.headers?.["X-Force-Error"]?.toLowerCase?.() === "true" ||
+    event?.headers?.["x-force-error"]?.toLowerCase?.() === "true";
+
+  if (forceError) {
+    console.error("🔥 Forced test error for CloudWatch");
+    throw new Error("Forced error → should trip alarm");
+  }
+  /* ====== END TEST ERROR BLOCK === */
+
+  let body;
+  let statusCode = 200;
+  const headers = { "Content-Type": "application/json" };
 
   try {
-    if (routeKey === "ANY /books") {
-      switch (http.method) {
-        case "GET":
-          body = await getAllBooks();
-          break;
-        case "PUT":
-        case "POST":
-          body = await putBook(JSON.parse(event.body));
-          break;
-        default:
-          throw new Error(`Unsupported ${http.method} on /books`);
+    switch (event.routeKey) {
+      case "GET /books/{id}":
+        body = await getBook(event.pathParameters.id);
+        break;
+      case "GET /books":
+        body = await getAllBooks();
+        break;
+      case "PUT /books": {
+        const data = JSON.parse(event.body);
+        body = await putBook(data);
+        break;
       }
-    } else if (routeKey === "ANY /books/{id}") {
-      const id = event.pathParameters.id;
-      switch (http.method) {
-        case "GET":
-          body = await getBook(id);
-          break;
-        case "DELETE":
-          body = await deleteBook(id);
-          break;
-        default:
-          throw new Error(`Unsupported ${http.method} on /books/{id}`);
-      }
-    } else {
-      throw new Error(`Unsupported route: ${routeKey}`);
+      case "DELETE /books/{id}":
+        body = await deleteBook(event.pathParameters.id);
+        break;
+      default:
+        throw new Error(`Unsupported route: ${event.routeKey}`);
     }
-  } catch (e) {
+  } catch (error) {
     statusCode = 400;
-    body = e.message;
+    body = error.message;
+  } finally {
+    body = JSON.stringify(body);
   }
-  return {
-    statusCode,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  };
+
+  return { statusCode, body, headers };
 };
+
+module.exports = { handler };
