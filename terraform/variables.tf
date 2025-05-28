@@ -1,13 +1,24 @@
 variable "aws_region" {
+  description = "AWS region to deploy resources"
+  type        = string
   default = "ap-southeast-1"
 }
 
 variable "artifact_bucket_name" {
-  default = "book-library-ci-artifact"
+  description = "Name of the S3 bucket for storing App artifacts"
+  type        = string
+  default     = "book-library-artifact"
+}
+
+variable "api_bucket_name" {
+  description = "Name of the S3 bucket for storing Lambda code"
+  type        = string
+  default     = "book-library-api-code"
 }
 
 variable "ami_id" {
-  description = "Ubuntu AMI ID for EC2"
+  description = "AMI ID for the EC2 instance"
+  type        = string
 }
 
 variable "instance_type" {
@@ -15,11 +26,13 @@ variable "instance_type" {
 }
 
 variable "key_pair_name" {
-  description = "SSH key pair name"
+  description = "SSH key pair name for EC2 instances"
+  type        = string
 }
 
 variable "vpc_id" {
-  description = "VPC ID for the EC2 instance"
+  description = "VPC ID where the EC2 instance will run"
+  type        = string
 }
 
 variable "table_name" {

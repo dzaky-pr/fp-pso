@@ -2,25 +2,42 @@ provider "aws" {
   region = var.aws_region
 }
 
+resource "random_id" "suffix" {
+  # Random ID for unique resource names
+  byte_length = 4
+}
+
 # --- S3 Bucket ---
-resource "aws_s3_bucket" "ci_artifact" {
-  bucket = var.artifact_bucket_name
-  versioning {
-    enabled = true
+resource "aws_s3_bucket" "artifact" {
+  bucket = "${var.artifact_bucket_name}-${random_id.suffix.hex}"
+
+  tags = {
+    Name        = "${var.artifact_bucket_name}-${random_id.suffix.hex}"
+    Environment = "Dev"
+    Project     = "BookLibrary"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "artifact" {
+  bucket = aws_s3_bucket.artifact.id
+  versioning_configuration {
+    status = "Enabled"
   }
 }
 
 resource "aws_s3_bucket" "lambda_bucket" {
-  bucket = "book-library-lambda-code-bucket-${random_id.bucket_suffix.hex}"
-}
+  bucket = "${var.api_bucket_name}-${random_id.suffix.hex}"
 
-resource "random_id" "bucket_suffix" {
-  byte_length = 8
+  tags = {
+    Name        = "${var.api_bucket_name}-${random_id.suffix.hex}"
+    Environment = "Dev"
+    Project     = "BookLibrary"
+  }
 }
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = var.lambda_code_path
+  source_file  = var.lambda_code_path
   output_path = "build/lambda_package.zip"
 }
 
@@ -30,10 +47,11 @@ resource "aws_s3_object" "lambda_code_upload" {
   source = data.archive_file.lambda_zip.output_path
   etag   = filemd5(data.archive_file.lambda_zip.output_path)
 }
+# ----------------
 
 # --- DynamoDB Table ---
 resource "aws_dynamodb_table" "books_table" {
-  name         = var.table_name
+  name         = "${var.table_name}-${random_id.suffix.hex}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
 
@@ -42,19 +60,25 @@ resource "aws_dynamodb_table" "books_table" {
     type = "N" # N for Number, based on lambda.js [cite: 32, 34]
   }
 
+  server_side_encryption {
+    enabled = true
+  }
+
   tags = {
-    Name        = "BookLibraryTable"
+    Name        = "${var.table_name}-${random_id.suffix.hex}"
     Environment = "Dev"
+    Project     = "BookLibrary"
   }
 }
+# ----------------
 
 # --- IAM User ---
 resource "aws_iam_user" "ci_user" {
-  name = "github-actions-cli-ci"
+  name = "github-actions-cli-ci-${random_id.suffix.hex}"
 }
 
 resource "aws_iam_user_policy" "ci_policy" {
-  name   = "ci-access-policy"
+  name   = "ci-access-policy-${random_id.suffix.hex}"
   user   = aws_iam_user.ci_user.name
   policy = data.aws_iam_policy_document.ci_doc.json
 }
@@ -68,18 +92,18 @@ data "aws_iam_policy_document" "ci_doc" {
       "s3:ListBucket"
     ]
     resources = [
-      aws_s3_bucket.ci_artifact.arn,
-      "${aws_s3_bucket.ci_artifact.arn}/*"
+      aws_s3_bucket.artifact.arn,
+      "${aws_s3_bucket.artifact.arn}/*"
     ]
   }
 }
 
 resource "aws_iam_user" "cd_user" {
-  name = "github-actions-cli-cd"
+  name = "github-actions-cli-cd-${random_id.suffix.hex}"
 }
 
 resource "aws_iam_user_policy" "cd_policy" {
-  name   = "cd-access-policy"
+  name   = "cd-access-policy-${random_id.suffix.hex}"
   user   = aws_iam_user.cd_user.name
   policy = data.aws_iam_policy_document.cd_doc.json
 }
@@ -95,8 +119,8 @@ data "aws_iam_policy_document" "cd_doc" {
     ]
 
     resources = [
-      aws_s3_bucket.ci_artifact.arn,
-      "${aws_s3_bucket.ci_artifact.arn}/*"
+      aws_s3_bucket.artifact.arn,
+      "${aws_s3_bucket.artifact.arn}/*"
     ]
   }
 
@@ -117,7 +141,7 @@ data "aws_iam_policy_document" "cd_doc" {
 }
 
 resource "aws_iam_role" "lambda_exec_role" {
-  name = "${var.lambda_function_name}-role"
+  name = "${var.lambda_function_name}-role-${random_id.suffix.hex}"
 
   assume_role_policy = jsonencode({
     Version   = "2012-10-17"
@@ -132,7 +156,7 @@ resource "aws_iam_role" "lambda_exec_role" {
 }
 
 resource "aws_iam_policy" "lambda_policy" {
-  name        = "${var.lambda_function_name}-policy"
+  name        = "${var.lambda_function_name}-policy-${random_id.suffix.hex}"
   description = "Policy for Book Library Lambda function"
 
   policy = jsonencode({
@@ -165,6 +189,7 @@ resource "aws_iam_role_policy_attachment" "lambda_policy_attach" {
   role       = aws_iam_role.lambda_exec_role.name
   policy_arn = aws_iam_policy.lambda_policy.arn
 }
+# ----------------
 
 # --- Access Key & Secret Key ---
 resource "aws_iam_access_key" "ci_key" {
@@ -180,6 +205,7 @@ resource "aws_cloudwatch_log_group" "lambda_log_group" {
   name              = "/aws/lambda/${var.lambda_function_name}"
   retention_in_days = 14 # Set your desired log retention period
 }
+# ----------------
 
 # --- AWS Lambda Function ---
 resource "aws_lambda_function" "book_library_lambda" {
@@ -211,7 +237,7 @@ resource "aws_lambda_function" "book_library_lambda" {
 
 # --- API Gateway (HTTP API) ---
 resource "aws_apigatewayv2_api" "http_api" {
-  name          = var.api_name
+  name          = "${var.api_name}-${random_id.suffix.hex}"
   protocol_type = "HTTP"
   target        = aws_lambda_function.book_library_lambda.arn
   description   = "API for the Book Library App"
@@ -271,7 +297,7 @@ resource "aws_sns_topic" "lambda_errors" {
 
 # --- CloudWatch Alarm for Lambda Errors ---
 resource "aws_cloudwatch_metric_alarm" "lambda_error_alarm" {
-  alarm_name          = "${var.lambda_function_name}-Errors"
+  alarm_name          = "${var.lambda_function_name}-errors-${random_id.suffix.hex}"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = "1"
   metric_name         = "Errors"
@@ -293,7 +319,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_error_alarm" {
 
 # --- Shared Security Group ---
 resource "aws_security_group" "app_sg" {
-  name        = "book-library-sg"
+  name        = "book-library-sg-${random_id.suffix.hex}"
   description = "Allow HTTP and SSH"
   vpc_id      = var.vpc_id
 
@@ -319,6 +345,21 @@ resource "aws_security_group" "app_sg" {
   }
 }
 
+# --- AWS AMI ---
+# data "aws_ami" "ubuntu_jammy" {
+#   most_recent = true
+#   owners      = ["099720109477"] # Canonical's official Ubuntu AMI owner ID
+
+#   filter {
+#     name   = "name"
+#     values = ["ubuntu/images/hvm-ssd/ubuntu-focal-22.04-amd64-server-*"]
+#   }
+#   filter {
+#     name   = "virtualization-type"
+#     values = ["hvm"]
+#   }
+# }
+
 # --- EC2 ---
 resource "aws_instance" "staging" {
   ami           = var.ami_id
@@ -327,7 +368,7 @@ resource "aws_instance" "staging" {
   security_groups = [aws_security_group.app_sg.name]
 
   tags = {
-    Name = "book-library-staging"
+    Name = "book-library-staging-${random_id.suffix.hex}"
   }
 
   user_data = <<-EOF
@@ -336,9 +377,9 @@ resource "aws_instance" "staging" {
               apt install -y awscli nodejs npm
               cd /home/ubuntu
               mkdir app && cd app
-              aws s3 cp s3://${var.artifact_bucket_name}/latest.txt .
+              aws s3 cp s3://${aws_s3_bucket.artifact.bucket}/latest.txt .
               VERSION=$(cat latest.txt)
-              aws s3 sync s3://${var.artifact_bucket_name}/$VERSION . --exact-timestamps
+              aws s3 sync s3://${aws_s3_bucket.artifact.bucket}/$VERSION . --exact-timestamps
               npm install --omit=dev
               npm run start
               EOF
@@ -351,7 +392,7 @@ resource "aws_instance" "production" {
   security_groups = [aws_security_group.app_sg.name]
 
   tags = {
-    Name = "book-library-production"
+    Name = "book-library-production-${random_id.suffix.hex}"
   }
 
   user_data = <<-EOF
@@ -360,9 +401,9 @@ resource "aws_instance" "production" {
               apt install -y awscli nodejs npm
               cd /home/ubuntu
               mkdir app && cd app
-              aws s3 cp s3://${var.artifact_bucket_name}/latest.txt .
+              aws s3 cp s3://${aws_s3_bucket.artifact.bucket}/latest.txt .
               VERSION=$(cat latest.txt)
-              aws s3 sync s3://${var.artifact_bucket_name}/$VERSION . --exact-timestamps
+              aws s3 sync s3://${aws_s3_bucket.artifact.bucket}/$VERSION . --exact-timestamps
               npm install --omit=dev
               npm run start
               EOF

@@ -29,6 +29,11 @@ output "api_gateway_url" {
   value       = aws_apigatewayv2_api.http_api.api_endpoint
 }
 
+output "artifact_bucket_name" {
+  description = "Name of the S3 bucket for Lambda artifacts"
+  value       = aws_s3_bucket_versioning.artifact.bucket
+}
+
 output "dynamodb_table_name" {
   description = "Name of the DynamoDB table created"
   value       = aws_dynamodb_table.books_table.name
@@ -44,6 +49,12 @@ output "sns_topic_arn" {
   value       = aws_sns_topic.lambda_errors.arn
 }
 
-output "ec2_public_ip" {
-  value = aws_instance.app_server.public_ip
+output "staging_public_ip" {
+  description = "Public IP address of the staging EC2 instance"
+  value = aws_instance.staging.public_ip
+}
+
+output "production_public_ip" {
+  description = "Public IP address of the production EC2 instance"
+  value = aws_instance.production.public_ip
 }
