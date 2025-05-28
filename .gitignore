@@ -38,6 +38,8 @@ next-env.d.ts
 # Terraform
 .terraform/
 terraform.tfstate
+.terraform.tfstate.lock.info
+.terraform.lock.hcl
 terraform.tfstate.backup
 crash.log
 *.tfvars

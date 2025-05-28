@@ -1,0 +1,79 @@
+name: 🛠️ CI Pipeline
+
+on:
+  push:
+    branches:
+      - dev-tito-rill-banget
+  pull_request: {}
+
+jobs:
+  build:
+    name: 🚀 Build & Upload Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      # ⬇️ Checkout repository
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v4
+
+      # ⚙️ Setup Node.js environment
+      - name: ⎔ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      # 📦 Install dependencies
+      - name: 📥 Install Dependencies
+        run: npm ci
+
+      # ✅ Run checks
+      - name: 🧪 Lint, Typecheck, Test
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test
+
+      # 🏗️ Build app
+      - name: 🏗️ Build Next.js App
+        run: npm run build
+
+      # 📦 Package build artifacts
+      - name: 📦 Package Artifacts
+        run: |
+          mkdir -p artifact
+          cp -r .next public package.json artifact/
+
+      # ☁️ Upload to S3 with versioning
+      - name: ☁️ Upload Artifacts to S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --exact-timestamps
+        env:
+          AWS_S3_BUCKET: book-library-ci-artifact
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CI }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CI }}
+          AWS_REGION: ap-southeast-1
+          SOURCE_DIR: ./artifact
+          DEST_DIR: ${{ github.sha }} # version folder = commit SHA
+
+      # 📄 Backup latest.txt to previous.txt
+      - name: 📄 Backup latest.txt to previous.txt
+        run: |
+          aws s3 cp s3://book-library-ci-artifact/latest.txt ./latest.txt || echo "No latest.txt yet"
+          [ -f latest.txt ] && aws s3 cp ./latest.txt s3://book-library-ci-artifact/previous.txt
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CI }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CI }}
+          AWS_REGION: ap-southeast-1
+
+      # 📄 Upload latest.txt with latest commit SHA to S3
+      - name: 📄 Upload latest.txt to S3
+        run: |
+          echo "${{ github.sha }}" > latest.txt
+          aws s3 cp latest.txt s3://book-library-ci-artifact/latest.txt
+          echo "📄 Updated version to ${{ github.sha }}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CI }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CI }}
+          AWS_REGION: ap-southeast-1
