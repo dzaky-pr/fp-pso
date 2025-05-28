@@ -3,7 +3,7 @@ name: 🛠️ CI Pipeline
 on:
   push:
     branches:
-      - main
+      - dev-tito-rill-banget
   pull_request: {}
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: "npm"
 
       # 📦 Install dependencies
       - name: 📥 Install Dependencies
@@ -56,7 +56,7 @@ jobs:
           AWS_REGION: ap-southeast-1
           SOURCE_DIR: ./artifact
           DEST_DIR: ${{ github.sha }} # version folder = commit SHA
-        
+
       # 📄 Backup latest.txt to previous.txt
       - name: 📄 Backup latest.txt to previous.txt
         run: |

@@ -1,10 +1,10 @@
 name: 🚀 CD Pipeline
 
 on:
-  workflow_dispatch:    # Manual trigger for deploy, or can be triggered from CI using workflow_run
+  workflow_dispatch:
   push:
     branches:
-      - main          # Optional: you can deploy on push to main
+      - dev-tito-rill-banget
 
 jobs:
   deploy:
