@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+echo ""
+echo "📢 post-commit: Commit baru berhasil dibuat!"
+
+# Simpan hash commit terakhir ke file (opsional)
+git rev-parse HEAD > .git/last-commit.txt
+
+echo "Hash commit terakhir disimpan ke .git/last-commit.txt"
+echo ""

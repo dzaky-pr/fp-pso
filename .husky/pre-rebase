@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+echo ""
+echo "🔧 pre-rebase: Akan melakukan rebase. Pastikan workspace bersih."
+# Misal: simpan backup
+git branch backup-before-rebase-$(date +%s)
+echo "Branch backup dibuat: backup-before-rebase-$(date +%s)"
+echo ""

@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+echo ""
+echo "🔄 post-rewrite: Proses rewrite history selesai (rebase/amend)."
+echo "Pastikan semua tools eksternal yang tergantung hash commit diperbarui."
+echo ""
