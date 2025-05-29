@@ -3,6 +3,13 @@
 echo ""
 echo "🔧 pre-rebase: Akan melakukan rebase. Pastikan workspace bersih."
 # Misal: simpan backup
-git branch backup-before-rebase-$(date +%s)
-echo "Branch backup dibuat: backup-before-rebase-$(date +%s)"
+BRANCH_NAME="backup-before-rebase-$(date +%s)"
+git branch "$BRANCH_NAME"
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "❌ [ERROR] Gagal membuat branch backup: $BRANCH_NAME"
+  exit 1
+fi
+
+echo "Branch backup dibuat: $BRANCH_NAME"
 echo ""
