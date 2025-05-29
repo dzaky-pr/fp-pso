@@ -13,8 +13,9 @@
     "check": "biome check .",
     "check:write": "biome check --write .",
     "validate": "pnpm check && pnpm typecheck",
+    "lint-format-check:write": "biome lint --write . && biome format --write . && biome check --write .",
     "prepare": "husky install",
-    "test": "echo \"All tests passed\"",
+    "test": "jest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
