@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+echo ""
+echo "📢 post-commit: Commit baru berhasil dibuat!"
+
+# Simpan hash commit terakhir ke file (opsional)
+git rev-parse HEAD > .git/last-commit.txt
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "❌ [ERROR] Gagal menyimpan hash commit terakhir ke .git/last-commit.txt!"
+  exit 1
+fi
+
+echo "Hash commit terakhir disimpan ke .git/last-commit.txt"
+echo ""

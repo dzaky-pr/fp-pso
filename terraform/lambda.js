@@ -1,15 +1,15 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
   DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
   ScanCommand,
-} from "@aws-sdk/lib-dynamodb";
+} = require("@aws-sdk/lib-dynamodb");
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-const tablename = "books";
+const tablename = process.env.TABLE_NAME || "books";
 
 /* ──────────────────────────
    CRUD helper
@@ -52,7 +52,7 @@ const deleteBook = async (id) => {
 /* ──────────────────────────
    Lambda handler
 ────────────────────────── */
-export const handler = async (event) => {
+const handler = async (event) => {
   /* ====== BLOK TEST ERROR ====== */
   console.log("🔥 [DEBUG] headers:", JSON.stringify(event.headers));
   console.log("🔥 [DEBUG] query:", JSON.stringify(event.queryStringParameters));
@@ -103,3 +103,5 @@ export const handler = async (event) => {
 
   return { statusCode, body, headers };
 };
+
+module.exports = { handler };

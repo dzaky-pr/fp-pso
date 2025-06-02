@@ -93,6 +93,13 @@ Add BREAKING CHANGE in the description if there is a significant change.
 - Don't use capitals in front of the sentence
 - Don't add full stop (.) at the end of the sentence
 
+## Team Members
+
+- 5026221085 - Dzaky Purnomo Rifa'i
+- 5026221086 - Darrell Valentino Widjaja
+- 5026221089 - Frans Nicklaus Gusyanto
+- 5026221096 - Viera Tito Virgiawan
+
 ## License
 
 This project is open source and available under the [MIT Licence](./LICENCE).

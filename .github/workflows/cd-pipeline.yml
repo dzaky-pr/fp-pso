@@ -1,0 +1,94 @@
+name: 🚀 CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev-tito-rill-banget
+
+jobs:
+  deploy:
+    name: 🚀 Deploy & Canary Release
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://your-prod-app-url.com
+
+    steps:
+      # ⬇️ Checkout repo
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v4
+
+      # ⬇️ Download latest artifact from S3
+      - name: ☁️ Download Latest Artifact from S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --exact-timestamps
+        env:
+          AWS_S3_BUCKET: book-library-ci-artifact
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CD }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CD }}
+          AWS_REGION: ap-southeast-1
+          SOURCE_DIR: "./"
+          DEST_DIR: latest_artifact/
+
+      # 🚩 Deploy to Staging EC2
+      - name: 🖥️ Deploy to Staging EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.STAGING_EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "latest_artifact/*"
+          target: "/var/www/app/staging"
+
+      # 🔥 Run Smoke Test on Staging
+      - name: 🔥 Smoke Test on Staging
+        run: |
+          # example curl test, replace with your own Playwright or curl scripts
+          curl --fail https://staging.your-app.com/health || exit 1
+      
+      #######################################################################
+      # === ⬇️  CANARY 10 %  ===============================================
+      #######################################################################
+
+      # 🎯 Canary Deploy 10% Traffic (example for ALB or custom routing)
+      - name: 🦺 Shift 10% Traffic to Canary
+        run: |
+          aws elbv2 modify-rule \
+            --rule-arn  ${{ secrets.ALB_RULE_ARN }} \
+            --actions "Type=forward,TargetGroupArn=${{ secrets.TG_NEW_ARN }},Weight=10" \
+                      "Type=forward,TargetGroupArn=${{ secrets.TG_OLD_ARN }},Weight=90"
+
+      # ⏳ Wait and Health Check Canary
+      - name: ⏳ Wait & Health Check Canary
+        run: |
+          sleep 60  # wait 1 minute for canary to stabilize
+          curl --fail https://canary.your-app.com/health || exit 1
+      
+      #######################################################################
+      # === ⬇️  FULL-SWITCH 100 %  =========================================
+      #######################################################################
+
+      # ✅ Deploy 100% Traffic to Prod if Canary OK
+      - name: ✅ Deploy 100% to Production
+        if: success()
+        run: |
+          aws elbv2 modify-rule \
+            --rule-arn  ${{ secrets.ALB_RULE_ARN }} \
+            --actions "Type=forward,TargetGroupArn=${{ secrets.TG_NEW_ARN }},Weight=100" \
+                      "Type=forward,TargetGroupArn=${{ secrets.TG_OLD_ARN }},Weight=0"
+
+      # 🔥 Post-Deploy Smoke Test
+      - name: 🔥 Post-Deploy Smoke Test
+        if: success()
+        run: |
+          curl --fail https://your-app.com/health || exit 1
+
+      # ⚠️ Rollback if any health check fails
+      - name: ⚠️ Rollback on Failure
+        if: failure()
+        run: |
+          echo "Health check failed — rolling back"
+          # TODO: Implement rollback commands (revert traffic routing)
+
