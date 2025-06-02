@@ -47,26 +47,37 @@ jobs:
         run: |
           # example curl test, replace with your own Playwright or curl scripts
           curl --fail https://staging.your-app.com/health || exit 1
+      
+      #######################################################################
+      # === ⬇️  CANARY 10 %  ===============================================
+      #######################################################################
 
       # 🎯 Canary Deploy 10% Traffic (example for ALB or custom routing)
-      - name: 🦺 Health Check Canary 10%
+      - name: 🦺 Shift 10% Traffic to Canary
         run: |
-          # TODO: Implement canary routing logic
-          echo "Setting 10% traffic to new version"
-          # curl or aws cli commands to update ALB target groups or DNS records
+          aws elbv2 modify-rule \
+            --rule-arn  ${{ secrets.ALB_RULE_ARN }} \
+            --actions "Type=forward,TargetGroupArn=${{ secrets.TG_NEW_ARN }},Weight=10" \
+                      "Type=forward,TargetGroupArn=${{ secrets.TG_OLD_ARN }},Weight=90"
 
       # ⏳ Wait and Health Check Canary
       - name: ⏳ Wait & Health Check Canary
         run: |
           sleep 60  # wait 1 minute for canary to stabilize
           curl --fail https://canary.your-app.com/health || exit 1
+      
+      #######################################################################
+      # === ⬇️  FULL-SWITCH 100 %  =========================================
+      #######################################################################
 
       # ✅ Deploy 100% Traffic to Prod if Canary OK
       - name: ✅ Deploy 100% to Production
         if: success()
         run: |
-          echo "Routing 100% traffic to new version"
-          # TODO: Implement full traffic switch logic
+          aws elbv2 modify-rule \
+            --rule-arn  ${{ secrets.ALB_RULE_ARN }} \
+            --actions "Type=forward,TargetGroupArn=${{ secrets.TG_NEW_ARN }},Weight=100" \
+                      "Type=forward,TargetGroupArn=${{ secrets.TG_OLD_ARN }},Weight=0"
 
       # 🔥 Post-Deploy Smoke Test
       - name: 🔥 Post-Deploy Smoke Test
@@ -80,3 +91,4 @@ jobs:
         run: |
           echo "Health check failed — rolling back"
           # TODO: Implement rollback commands (revert traffic routing)
+
