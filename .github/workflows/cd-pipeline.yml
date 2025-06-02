@@ -85,10 +85,16 @@ jobs:
         run: |
           curl --fail https://your-app.com/health || exit 1
 
-      # ⚠️ Rollback if any health check fails
-      - name: ⚠️ Rollback on Failure
+      #######################################################################
+      # === ⬇  ROLLBACK  ===================================================
+      #######################################################################
+
+      # ⚠ Rollback if any health check fails
+      - name: ⚠ Rollback on Failure
         if: failure()
         run: |
-          echo "Health check failed — rolling back"
-          # TODO: Implement rollback commands (revert traffic routing)
-
+          echo "🔴 Rollback triggered: shifting all traffic back to stable version"
+          aws elbv2 modify-rule \
+            --rule-arn  ${{ secrets.ALB_RULE_ARN }} \
+            --actions "Type=forward,TargetGroupArn=${{ secrets.TG_NEW_ARN }},Weight=0" \
+                      "Type=forward,TargetGroupArn=${{ secrets.TG_OLD_ARN }},Weight=100"

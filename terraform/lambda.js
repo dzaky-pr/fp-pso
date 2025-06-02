@@ -53,16 +53,10 @@ const deleteBook = async (id) => {
    Lambda handler
 ────────────────────────── */
 const handler = async (event) => {
-  /* ====== BLOK TEST ERROR ====== */
-  console.log("🔥 [DEBUG] headers:", JSON.stringify(event.headers));
-  console.log("🔥 [DEBUG] query:", JSON.stringify(event.queryStringParameters));
-
   const forceError =
     event?.queryStringParameters?.forceError === "1" ||
     event?.headers?.["X-Force-Error"]?.toLowerCase?.() === "true" ||
     event?.headers?.["x-force-error"]?.toLowerCase?.() === "true";
-
-  console.log("🔥 [DEBUG] forceError evaluated as:", forceError);
 
   if (forceError) {
     console.error("🔥 Forced test error triggered");
