@@ -97,7 +97,9 @@ describe("AddPage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Add Book" })).not.toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Add Book" }),
+      ).not.toBeDisabled();
     });
 
     expect(mockPush).toHaveBeenCalledWith("/");
@@ -133,7 +135,9 @@ describe("AddPage", () => {
     resolvePromise!();
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Add Book" })).not.toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Add Book" }),
+      ).not.toBeDisabled();
     });
   });
 
@@ -157,7 +161,9 @@ describe("AddPage", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Add Book" })).not.toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Add Book" }),
+      ).not.toBeDisabled();
     });
   });
 });
