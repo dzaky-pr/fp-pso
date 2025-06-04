@@ -391,34 +391,51 @@ resource "aws_instance" "staging" {
     Name = "book-library-staging-${random_id.suffix.hex}"
   }
 
+  # TO-DO: Move to Ansible or similar for better management
   user_data = <<-EOF
               #!/bin/bash -xe
-              sudo apt update
-              sudo apt install -y awscli git curl
+              exec > /var/log/user-data.log 2>&1
 
-              # Install Node.js from NodeSource
-              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-              sudo apt install -y nodejs
+              # Install system packages
+              apt update
+              apt install -y git curl unzip
 
-              # Switch to ubuntu home
-              mkdir home
-              cd home
-              mkdir ubuntu
-              cd ubuntu
+              # Install Node.js
+              curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+              apt install -y nodejs
 
-              # Clone repo and set up app
+              # Install AWS CLI v2
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              sudo ./aws/install
+
+              # Switch to ubuntu user
+              sudo -u ubuntu -i bash <<SCRIPT
+              cd /home/ubuntu
+
+              # Clone repo and go into project directory
               git clone "https://github.com/dzaky-pr/fp-pso.git"
               cd fp-pso
 
-              # Create .env file
-              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" > .env
+              # Set environment variables for AWS
+              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" >> .env
 
-              # Install dependencies and build
+              # Optional: set AWS credentials using CLI (for persistence)
+              aws configure set aws_access_key_id "${var.aws_access_key}"
+              aws configure set aws_secret_access_key "${var.aws_secret_access_key}"
+              aws configure set region "${var.aws_region}"
+
+              # Build and deploy
               npm install
               npm run build
 
-              # Run the app
-              npm run start
+              # Example: upload static files to S3
+              aws s3 cp ./out s3://${aws_s3_bucket.artifact.bucket}/ --recursive
+
+              # Optionally: start the app using standalone server
+              node .next/standalone/server.js &
+
+              SCRIPT
               EOF
 }
 
@@ -434,31 +451,50 @@ resource "aws_instance" "production" {
 
   user_data = <<-EOF
               #!/bin/bash -xe
-              sudo apt update
-              sudo apt install -y awscli git curl
+              exec > /var/log/user-data.log 2>&1
 
-              # Install Node.js from NodeSource
-              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-              sudo apt install -y nodejs
+              # Install system packages
+              apt update
+              apt install -y git curl unzip
 
-              # Switch to ubuntu home
-              mkdir home
-              cd home
-              mkdir ubuntu
-              cd ubuntu
+              # Install Node.js
+              curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+              apt install -y nodejs
 
-              # Clone repo and set up app
+              # Install AWS CLI v2
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              sudo ./aws/install
+
+              # Switch to ubuntu user
+              sudo -u ubuntu -i bash <<SCRIPT
+              cd /home/ubuntu
+
+              # Clone repo and go into project directory
               git clone "https://github.com/dzaky-pr/fp-pso.git"
               cd fp-pso
 
-              # Create .env file
-              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" > .env
+              # Set environment variables for AWS
+              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" >> .env
 
-              # Install dependencies and build
+              # Optional: set AWS credentials using CLI (for persistence)
+              aws configure set aws_access_key_id "${var.aws_access_key}"
+              aws configure set aws_secret_access_key "${var.aws_secret_access_key}"
+              aws configure set region "${var.aws_region}"
+
+              # Build and deploy
               npm install
               npm run build
 
-              # Run the app
-              npm run start
+              # Example: upload static files to S3
+              aws s3 cp ./out s3://${aws_s3_bucket.artifact.bucket}/ --recursive
+
+              # Optionally: start the app using standalone server
+              node .next/standalone/server.js &
+
+              SCRIPT
               EOF
+
+
+
 }

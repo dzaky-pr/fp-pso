@@ -4,6 +4,18 @@ variable "aws_region" {
   default = "ap-southeast-1"
 }
 
+variable "aws_access_key" {
+  description = "AWS Access Key ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS Secret Access Key ID"
+  type        = string
+  sensitive   = true
+}
+
 variable "artifact_bucket_name" {
   description = "Name of the S3 bucket for storing App artifacts"
   type        = string
