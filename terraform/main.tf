@@ -380,6 +380,50 @@ resource "aws_security_group" "app_sg" {
 #   }
 # }
 
+resource "aws_iam_role" "ec2_role" {
+  name = "book-library-ec2-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action    = "sts:AssumeRole",
+      Effect    = "Allow",
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_policy" "s3_access" {
+  name = "book-library-s3-access"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect   = "Allow",
+      Action   = [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      Resource = [
+        "arn:aws:s3:::${var.artifact_bucket}",
+        "arn:aws:s3:::${var.artifact_bucket}/*"
+      ]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.s3_access.arn
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "book-library-instance-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
 # --- EC2 ---
 resource "aws_instance" "staging" {
   ami           = var.ami_id
@@ -387,55 +431,27 @@ resource "aws_instance" "staging" {
   key_name      = var.key_pair_name
   security_groups = [aws_security_group.app_sg.name]
 
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+
   tags = {
     Name = "book-library-staging-${random_id.suffix.hex}"
   }
 
-  # TO-DO: Move to Ansible or similar for better management
   user_data = <<-EOF
               #!/bin/bash -xe
               exec > /var/log/user-data.log 2>&1
 
-              # Install system packages
-              apt update
-              apt install -y git curl unzip
+              apt update && apt install -y curl unzip npm
 
-              # Install Node.js
-              curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-              apt install -y nodejs
+              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+              sudo apt install -y nodejs
 
-              # Install AWS CLI v2
               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
               unzip awscliv2.zip
               sudo ./aws/install
 
-              # Switch to ubuntu user
-              sudo -u ubuntu -i bash <<SCRIPT
-              cd /home/ubuntu
-
-              # Clone repo and go into project directory
-              git clone "https://github.com/dzaky-pr/fp-pso.git"
-              cd fp-pso
-
-              # Set environment variables for AWS
-              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" >> .env
-
-              # Optional: set AWS credentials using CLI (for persistence)
-              aws configure set aws_access_key_id "${var.aws_access_key}"
-              aws configure set aws_secret_access_key "${var.aws_secret_access_key}"
-              aws configure set region "${var.aws_region}"
-
-              # Build and deploy
-              npm install
-              npm run build
-
-              # Example: upload static files to S3
-              aws s3 cp ./out s3://${aws_s3_bucket.artifact.bucket}/ --recursive
-
-              # Optionally: start the app using standalone server
-              node .next/standalone/server.js &
-
-              SCRIPT
+              # Install PM2 globally
+              npm install -g pm2
               EOF
 }
 
@@ -445,6 +461,8 @@ resource "aws_instance" "production" {
   key_name      = var.key_pair_name
   security_groups = [aws_security_group.app_sg.name]
 
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+
   tags = {
     Name = "book-library-production-${random_id.suffix.hex}"
   }
@@ -453,48 +471,64 @@ resource "aws_instance" "production" {
               #!/bin/bash -xe
               exec > /var/log/user-data.log 2>&1
 
-              # Install system packages
-              apt update
-              apt install -y git curl unzip
+              apt update && apt install -y curl unzip nodejs npm
 
-              # Install Node.js
-              curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-              apt install -y nodejs
+              # Install PM2 globally
+              npm install -g pm2
 
-              # Install AWS CLI v2
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              unzip awscliv2.zip
-              sudo ./aws/install
-
-              # Switch to ubuntu user
-              sudo -u ubuntu -i bash <<SCRIPT
               cd /home/ubuntu
 
-              # Clone repo and go into project directory
-              git clone "https://github.com/dzaky-pr/fp-pso.git"
-              cd fp-pso
+              # Retry logic for latest.txt
+              for i in {1..10}; do
+                if aws s3 cp s3://${aws_s3_bucket.artifact.bucket}/latest.txt ./latest.txt; then
+                  echo "✅ Found latest.txt"
+                  break
+                fi
+                echo "⏳ Waiting for artifact... ($i/10)"
+                sleep 15
+              done
 
-              # Set environment variables for AWS
-              echo "AWS_API_URL=${aws_apigatewayv2_api.api_books.api_endpoint}" >> .env
+              if [ ! -f "./latest.txt" ]; then
+                echo "❌ Failed to fetch latest.txt after 10 tries. Exiting."
+                exit 1
+              fi
 
-              # Optional: set AWS credentials using CLI (for persistence)
-              aws configure set aws_access_key_id "${var.aws_access_key}"
-              aws configure set aws_secret_access_key "${var.aws_secret_access_key}"
-              aws configure set region "${var.aws_region}"
+              VERSION=$(cat latest.txt)
 
-              # Build and deploy
-              npm install
-              npm run build
+              mkdir -p /home/ubuntu/deploy
+              aws s3 sync s3://${aws_s3_bucket.artifact.bucket}/$VERSION/ /home/ubuntu/deploy
 
-              # Example: upload static files to S3
-              aws s3 cp ./out s3://${aws_s3_bucket.artifact.bucket}/ --recursive
+              cd /home/ubuntu/deploy
 
-              # Optionally: start the app using standalone server
-              node .next/standalone/server.js &
+              if [ -f "package.json" ]; then
+                npm install --omit=dev
+              fi
 
-              SCRIPT
+              # Start using PM2
+              pm2 start .next/standalone/server.js --name book-library
+              pm2 save
+              pm2 startup systemd -u ubuntu --hp /home/ubuntu
               EOF
 
+  depends_on = [
+    aws_iam_role_policy_attachment.attach_s3_policy,
+    null_resource.trigger_ci_pipeline
+  ]
+}
 
 
+resource "null_resource" "trigger_ci_pipeline" {
+  provisioner "local-exec" {
+    command = <<EOT
+      curl -X POST \
+        -H "Authorization: token ${var.github_token}" \
+        -H "Accept: application/vnd.github+json" \
+        https://api.github.com/repos/${var.github_repo}/actions/workflows/ci-pipeline.yml/dispatches \
+        -d '{"ref": "${var.github_branch}"}'
+    EOT
+  }
+
+  depends_on = [
+    aws_s3_bucket.artifact
+  ]
 }

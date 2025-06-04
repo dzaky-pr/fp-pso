@@ -76,3 +76,21 @@ variable "lambda_code_path" {
   type        = string
   default     = "./lambda.js" # Assumes lambda.js is in the same directory
 }
+
+variable "github_token" {
+  description = "GitHub Personal Access Token for triggering workflows"
+  type        = string
+  sensitive   = true
+}
+
+variable "github_repo" {
+  description = "GitHub repo to trigger the CI pipeline"
+  type        = string
+  default     = "dzaky-pr/fp-pso"
+}
+
+variable "github_branch" {
+  description = "Branch to trigger the CI pipeline"
+  type        = string
+  default     = "main"
+}

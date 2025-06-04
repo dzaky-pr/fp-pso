@@ -77,19 +77,19 @@ app.all("/api/books*", async (req, res) => {
 });
 
 // Health check
-app.get("/health", (req, res) => {
+app.get("/health", (_req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Local API server running on http://localhost:${PORT}`);
-  console.log(`📝 API endpoints:`);
-  console.log(`   GET    http://localhost:${PORT}/api/books`);
-  console.log(`   GET    http://localhost:${PORT}/api/books/{id}`);
-  console.log(`   PUT    http://localhost:${PORT}/api/books`);
-  console.log(`   DELETE http://localhost:${PORT}/api/books/{id}`);
-  console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  // console.log(`🚀 Local API server running on http://localhost:${PORT}`);
+  // console.log(`📝 API endpoints:`);
+  // console.log(`   GET    http://localhost:${PORT}/api/books`);
+  // console.log(`   GET    http://localhost:${PORT}/api/books/{id}`);
+  // console.log(`   PUT    http://localhost:${PORT}/api/books`);
+  // console.log(`   DELETE http://localhost:${PORT}/api/books/{id}`);
+  // console.log(`🏥 Health check: http://localhost:${PORT}/health`);
 });
 
 module.exports = app;

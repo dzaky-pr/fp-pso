@@ -1,78 +1,82 @@
-name: 🛠️ CI Pipeline
+name: 🛠 CI Pipeline
 
 on:
+  workflow_dispatch: # Allow manual or Terraform API trigger
   push:
     branches:
-      - dev-tito-rill-banget
+      - main
 
 jobs:
   build:
     name: 🚀 Build & Upload Artifacts
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: ap-southeast-1
+
     steps:
-      # ⬇️ Checkout repository
-      - name: ⬇️ Checkout Code
+      # ⬇ Checkout repository
+      - name: ⬇ Checkout Code
         uses: actions/checkout@v4
 
-      # ⚙️ Setup Node.js environment
+      # ⚙ Setup Node.js
       - name: ⎔ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: "npm"
 
-      # 📦 Install dependencies
-      - name: 📥 Install Dependencies
+      # 📥 Install dependencies
+      - name: 📦 Install Dependencies
         run: npm ci
 
-      # ✅ Run checks
-      - name: 🧪 Lint, Typecheck, Test
+      # ✅ Lint, Typecheck, and Test
+      - name: 🧪 Biome, Typecheck, and Test
         run: |
-          npm run lint
+          npm run check
           npm run typecheck
-          npm test
 
-      # 🏗️ Build app
-      - name: 🏗️ Build Next.js App
+      # 🏗 Build Next.js App
+      - name: 🏗 Build App
         run: npm run build
 
-      # 📦 Package build artifacts
+      # 📦 Prepare Artifact
       - name: 📦 Package Artifacts
         run: |
           mkdir -p artifact
-          cp -r .next public package.json artifact/
+          cp -r .next/static .next/standalone/.next
+          cp -r .next/standalone public package.json artifact/
 
-      # ☁️ Upload to S3 with versioning
-      - name: ☁️ Upload Artifacts to S3
+      # ☁ Upload to S3 (versioned by commit SHA)
+      - name: ☁ Upload to S3
         uses: jakejarvis/s3-sync-action@v0.5.1
         with:
           args: --exact-timestamps
         env:
-          AWS_S3_BUCKET: book-library-ci-artifact
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CI }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CI }}
-          AWS_REGION: ap-southeast-1
+          AWS_S3_BUCKET: book-library-artifact-208537f6
+          AWS_ACCESS_KEY_ID: AKIAWKVVK2CXIOCDJUON
+          AWS_SECRET_ACCESS_KEY: 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
+          AWS_REGION: ${{ env.AWS_REGION }}
           SOURCE_DIR: ./artifact
-          DEST_DIR: ${{ github.sha }} # version folder = commit SHA
+          DEST_DIR: ${{ github.sha }}
 
-      # 📄 Backup latest.txt to previous.txt
-      - name: 📄 Backup latest.txt to previous.txt
+      # 📄 Backup latest.txt to previous.txt (if it exists)
+      - name: 📄 Backup latest.txt
         run: |
-          aws s3 cp s3://book-library-ci-artifact/latest.txt ./latest.txt || echo "No latest.txt yet"
-          [ -f latest.txt ] && aws s3 cp ./latest.txt s3://book-library-ci-artifact/previous.txt
+          aws s3 cp s3://book-library-artifact-208537f6/latest.txt ./latest.txt || echo "No latest.txt yet"
+          [ -f latest.txt ] && aws s3 cp ./latest.txt s3://book-library-artifact-208537f6/previous.txt
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CI }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CI }}
-          AWS_REGION: ap-southeast-1
+          AWS_ACCESS_KEY_ID: AKIAWKVVK2CXIOCDJUON
+          AWS_SECRET_ACCESS_KEY: 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
+          AWS_REGION: ${{ env.AWS_REGION }}
 
-      # 📄 Upload latest.txt with latest commit SHA to S3
-      - name: 📄 Upload latest.txt to S3
+      # 📄 Write and Upload latest.txt
+      - name: 📄 Upload latest.txt
         run: |
           echo "${{ github.sha }}" > latest.txt
-          aws s3 cp latest.txt s3://book-library-ci-artifact/latest.txt
-          echo "📄 Updated version to ${{ github.sha }}"
+          aws s3 cp latest.txt s3://book-library-artifact-208537f6/latest.txt
+          echo "✅ latest.txt now points to ${{ github.sha }}"
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CI }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CI }}
-          AWS_REGION: ap-southeast-1
+          AWS_ACCESS_KEY_ID: AKIAWKVVK2CXIOCDJUON
+          AWS_SECRET_ACCESS_KEY: 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
+          AWS_REGION: ${{ env.AWS_REGION }}

@@ -58,3 +58,7 @@ output "production_public_ip" {
   description = "Public IP address of the production EC2 instance"
   value = aws_instance.production.public_ip
 }
+
+output "ci_trigger_status" {
+  value = "CI/CD Pipeline trigger added after infra provisioning 🚀"
+}
