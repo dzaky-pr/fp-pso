@@ -48,6 +48,11 @@ jobs:
           # example curl test, replace with your own Playwright or curl scripts
           curl --fail https://staging.your-app.com/health || exit 1
       
+      - name: 🔥 Post-Deploy Smoke Test UI
+        env:
+          SMOKE_UI_URL: "https://staging.your-app.com"
+        run: npm run smoke-ui
+
       #######################################################################
       # === ⬇️  CANARY 10 %  ===============================================
       #######################################################################
@@ -80,11 +85,16 @@ jobs:
                       "Type=forward,TargetGroupArn=${{ secrets.TG_OLD_ARN }},Weight=0"
 
       # 🔥 Post-Deploy Smoke Test
-      - name: 🔥 Post-Deploy Smoke Test
+      - name: 🔥 Post-Deploy Smoke Test Curl
         if: success()
         run: |
           curl --fail https://your-app.com/health || exit 1
 
+      - name: 🔥 Post-Deploy Smoke Test UI
+        env:
+          SMOKE_UI_URL: "https://staging.your-app.com"
+        run: npm run smoke-ui
+      
       #######################################################################
       # === ⬇  ROLLBACK  ===================================================
       #######################################################################

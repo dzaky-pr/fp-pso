@@ -277,6 +277,12 @@ resource "aws_apigatewayv2_route" "delete_book" {
   target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
 }
 
+resource "aws_apigatewayv2_route" "health_route" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "GET /health"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
+
 resource "aws_cloudwatch_log_group" "api_gw_logs" {
   name              = "/aws/api-gw/${var.api_name}"
   retention_in_days = 14
@@ -299,6 +305,13 @@ resource "aws_lambda_permission" "allow_api_books_detail" {
   source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/books/{id}"
 }
 
+resource "aws_lambda_permission" "allow_api_health" {
+  statement_id  = "AllowHealthAPIInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.book_library_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/health"
+}
 
 # --- SNS Topic for Alerts ---
 

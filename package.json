@@ -17,7 +17,8 @@
     "prepare": "husky install",
     "test": "jest",
     "test:watch": "jest --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke": "npx playwright test tests/smoke.spec.ts --timeout=30000"
   },
   "dependencies": {
     "next": "^14.2.29",
@@ -32,6 +33,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@playwright/test": "^1.52.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22",
     "@types/react": "^18.3.23",

@@ -49,6 +49,10 @@ const deleteBook = async (id) => {
   return `Deleted Book ${id}`;
 };
 
+const getHealth = async () => {
+  return { status: "ok" };
+};
+
 /* ──────────────────────────
    Lambda handler
 ────────────────────────── */
@@ -83,6 +87,9 @@ const handler = async (event) => {
       }
       case "DELETE /books/{id}":
         body = await deleteBook(event.pathParameters.id);
+        break;
+      case "GET /health":
+        body = await getHealth();
         break;
       default:
         throw new Error(`Unsupported route: ${event.routeKey}`);
