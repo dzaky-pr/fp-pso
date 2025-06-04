@@ -70,7 +70,11 @@ describe("Data Actions", () => {
     it("handles network error", async () => {
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      await expect(getBooks()).rejects.toThrow("Failed to fetch Books.");
+      const result = await getBooks();
+      expect(result).toEqual({
+        status: 500,
+        data: [],
+      });
     });
   });
 });

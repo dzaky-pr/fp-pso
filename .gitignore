@@ -50,3 +50,7 @@ lambda_package.zip
 
 # Husky
 .husky/
+
+# Dynamo DB Local
+/local-dynamodb/*
+/docker/*
