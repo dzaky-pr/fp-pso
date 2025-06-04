@@ -25,7 +25,12 @@ function AddPage() {
     if (book) {
       const newBook: IBook = {
         ...book,
-        [name]: name === "price" ? Number.parseFloat(value) : value,
+        [name]:
+          name === "price"
+            ? value === ""
+              ? 0
+              : Number.parseFloat(value) || 0
+            : value,
       };
       setBook(newBook);
     }
@@ -40,7 +45,7 @@ function AddPage() {
       router.refresh();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_error) {
-      setError("Failed to edit book");
+      setError("Failed to add book");
     } finally {
       setLoading(false);
     }
@@ -113,7 +118,7 @@ function AddPage() {
             id="price"
             name="price"
             step="0.01"
-            value={book.price}
+            value={book.price === 0 ? "" : book.price}
             onChange={handleChange}
             placeholder="Enter Book Price"
             className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"

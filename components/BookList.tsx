@@ -11,8 +11,10 @@ export default function BookList({ books }: { books: IBook[] }) {
   const [filteredBooks, setFilteredBooks] = useState<IBook[]>(books);
 
   const handleSearch = (query: string) => {
-    const filtered = books.filter((book) =>
-      book.title.toLowerCase().includes(query.toLowerCase()),
+    const filtered = books.filter(
+      (book) =>
+        book.title.toLowerCase().includes(query.toLowerCase()) ||
+        book.author.toLowerCase().includes(query.toLowerCase()),
     );
     setFilteredBooks(filtered);
   };
@@ -23,11 +25,25 @@ export default function BookList({ books }: { books: IBook[] }) {
         <SearchBar onSearch={handleSearch} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-        {filteredBooks.map((book, idx) => (
-          <BookCard key={idx} book={book} />
-        ))}
-      </div>
+      {books.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            No books available. Add some books to get started!
+          </p>
+        </div>
+      ) : filteredBooks.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            No books found matching your search.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          {filteredBooks.map((book, idx) => (
+            <BookCard key={idx} book={book} />
+          ))}
+        </div>
+      )}
 
       <div>
         <Link href="/add">
