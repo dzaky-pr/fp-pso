@@ -47,3 +47,6 @@ crash.log
 
 # Lambda
 lambda_package.zip
+
+# Husky
+.husky/
