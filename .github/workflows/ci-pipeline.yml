@@ -45,7 +45,7 @@ jobs:
         run: |
           mkdir -p artifact
           cp -r .next/static .next/standalone/.next
-          cp -r .next/standalone package.json artifact/
+          cp -r .next/standalone artifact/
 
       # ☁ Upload to S3 (versioned by commit SHA)
       - name: ☁ Upload to S3
