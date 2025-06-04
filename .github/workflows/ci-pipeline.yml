@@ -61,13 +61,19 @@ jobs:
           DEST_DIR: ${{ github.sha }}
 
       # 📄 Backup latest.txt to previous.txt (if it exists)
-      - name: 📄 Backup latest.txt
+      - name: 📄 Backup latest.txt (if it exists)
         run: |
-          aws s3 cp s3://book-library-artifact-208537f6/latest.txt ./latest.txt || echo "No latest.txt yet"
-          [ -f latest.txt ] && aws s3 cp ./latest.txt s3://book-library-artifact-208537f6/previous.txt
+          set +e
+          aws s3 cp s3://book-library-artifact-208537f6/latest.txt ./latest.txt
+          if [ -f latest.txt ]; then
+            echo "✅ Found latest.txt, backing up to previous.txt"
+            aws s3 cp ./latest.txt s3://book-library-artifact-208537f6/previous.txt
+          else
+            echo "ℹ️ No latest.txt found, skipping backup."
+          fi
         env:
-          AWS_ACCESS_KEY_ID: AKIAWKVVK2CXIOCDJUON
-          AWS_SECRET_ACCESS_KEY: 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
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
       # 📄 Write and Upload latest.txt
@@ -80,3 +86,7 @@ jobs:
           AWS_ACCESS_KEY_ID: AKIAWKVVK2CXIOCDJUON
           AWS_SECRET_ACCESS_KEY: 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
           AWS_REGION: ${{ env.AWS_REGION }}
+
+      # 🧹 Clean previous artifacts
+      - name: 🧹 Clean previous artifacts
+        run: rm -rf artifact && mkdir artifact
