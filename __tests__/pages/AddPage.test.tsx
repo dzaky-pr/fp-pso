@@ -96,6 +96,10 @@ describe("AddPage", () => {
       );
     });
 
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Add Book" })).not.toBeDisabled();
+    });
+
     expect(mockPush).toHaveBeenCalledWith("/");
     expect(mockRefresh).toHaveBeenCalled();
   });
@@ -121,14 +125,16 @@ describe("AddPage", () => {
     const submitButton = screen.getByRole("button", { name: "Add Book" });
     await user.click(submitButton);
 
-    // Check loading state immediately after click
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Loading..." })).toBeTruthy();
       expect(screen.getByRole("button", { name: "Loading..." })).toBeDisabled();
     });
 
     // Resolve the promise to finish the test
     resolvePromise!();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Add Book" })).not.toBeDisabled();
+    });
   });
 
   it("handles submission error", async () => {
@@ -146,11 +152,12 @@ describe("AddPage", () => {
     // Submit form
     await user.click(screen.getByRole("button", { name: "Add Book" }));
 
-    await waitFor(
-      () => {
-        expect(screen.getByText("Failed to add book")).toBeTruthy();
-      },
-      { timeout: 3000 },
-    );
+    await waitFor(() => {
+      expect(screen.getByText("Failed to add book")).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Add Book" })).not.toBeDisabled();
+    });
   });
 });
