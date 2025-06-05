@@ -24,7 +24,8 @@
     "db:stop": "docker-compose down",
     "db:test": "node local-lambda.js",
     "api:start": "node server.js",
-    "dev:full": "npm run db:start && npm run api:start & npm run dev"
+    "dev:full": "npm run db:start && npm run api:start & npm run dev",
+    "smoke-ui": "npx playwright test playwright_test/smoke.spec.ts --timeout=30000"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.0.0",
@@ -41,6 +42,7 @@
     "@biomejs/biome": "^1.9.4",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@playwright/test": "^1.52.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

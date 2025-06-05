@@ -57,6 +57,6 @@ jobs:
           script: |
             sudo systemctl restart your-app.service
 
-      - name: 🔥 Post-Deploy Smoke Test
+      - name: 🔥 Post-Deploy Smoke Test Curl
         run: |
           curl --fail https://your-app.com/health || exit 1
