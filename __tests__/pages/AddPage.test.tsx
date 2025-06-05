@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
 import { putBookInDB } from "../../actions/actions";
@@ -82,8 +82,10 @@ describe("AddPage", () => {
     await user.type(screen.getByLabelText("Price"), "25.99");
     await user.type(screen.getByLabelText("Description"), "Test Description");
 
-    // Submit form
-    await user.click(screen.getByRole("button", { name: "Add Book" }));
+    // Submit form wrapped in act
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: "Add Book" }));
+    });
 
     await waitFor(() => {
       expect(mockPutBookInDB).toHaveBeenCalledWith(
@@ -117,9 +119,12 @@ describe("AddPage", () => {
     await user.type(screen.getByLabelText("Price"), "25.99");
     await user.type(screen.getByLabelText("Description"), "Test Description");
 
-    // Submit form
+    // Submit form wrapped in act
     const submitButton = screen.getByRole("button", { name: "Add Book" });
-    await user.click(submitButton);
+
+    await act(async () => {
+      await user.click(submitButton);
+    });
 
     // Check loading state immediately after click
     await waitFor(() => {
@@ -128,7 +133,9 @@ describe("AddPage", () => {
     });
 
     // Resolve the promise to finish the test
-    resolvePromise!();
+    act(() => {
+      resolvePromise!();
+    });
   });
 
   it("handles submission error", async () => {
@@ -143,8 +150,10 @@ describe("AddPage", () => {
     await user.type(screen.getByLabelText("Price"), "25.99");
     await user.type(screen.getByLabelText("Description"), "Test Description");
 
-    // Submit form
-    await user.click(screen.getByRole("button", { name: "Add Book" }));
+    // Submit form wrapped in act
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: "Add Book" }));
+    });
 
     await waitFor(
       () => {
