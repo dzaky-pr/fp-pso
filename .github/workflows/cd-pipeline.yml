@@ -24,8 +24,23 @@ jobs:
         with:
           terraform_version: 1.6.6
 
+      - name: 🌱 Setup tfvars
+        env:
+          KEY_PAIR_NAME: ${{ secrets.KEY_PAIR_NAME }}
+          VPC_ID: ${{ secrets.VPC_ID }}
+        run: |
+          echo "key_pair_name = \"$KEY_PAIR_NAME\"" > terraform/terraform.tfvars
+          echo "vpc_id = \"$VPC_ID\"" >> terraform/terraform.tfvars
+
       - name: 🌱 Terraform Init
-        run: terraform init
+        run: terraform -chdir=./terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: 🌱 Terraform Apply
+        run: terraform -chdir=./terraform apply -auto-approve
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -34,7 +49,7 @@ jobs:
       - name: 📦 Terraform Output
         id: tf_output
         run: |
-          terraform output -json > tf_output.json
+          terraform -chdir=./terraform output -json > tf_output.json
           echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "cd_access_key_id=$(jq -r '.cd_access_key_id.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "cd_secret_access_key=$(jq -r '.cd_secret_access_key.value' tf_output.json)" >> $GITHUB_OUTPUT
@@ -43,6 +58,11 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: ✅ Check Terraform Output
+        run: |
+          echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
+          echo "Production Public IP: ${{ steps.tf_output.outputs.production_public_ip }}"
 
       - name: ☁ Download latest.txt
         run: |
