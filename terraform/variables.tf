@@ -4,18 +4,6 @@ variable "aws_region" {
   default = "ap-southeast-1"
 }
 
-variable "aws_access_key" {
-  description = "AWS Access Key ID"
-  type        = string
-  sensitive   = true
-}
-
-variable "aws_secret_access_key" {
-  description = "AWS Secret Access Key ID"
-  type        = string
-  sensitive   = true
-}
-
 variable "artifact_bucket_name" {
   description = "Name of the S3 bucket for storing App artifacts"
   type        = string
@@ -31,6 +19,7 @@ variable "api_bucket_name" {
 variable "ami_id" {
   description = "AMI ID for the EC2 instance"
   type        = string
+  default     = "ami-0c1907b6d738188e5" # AMI ID for Ubuntu 20.04 in ap-southeast-1 [cite: 30]
 }
 
 variable "instance_type" {
@@ -75,22 +64,4 @@ variable "lambda_code_path" {
   description = "Path to the lambda.js file"
   type        = string
   default     = "./lambda.js" # Assumes lambda.js is in the same directory
-}
-
-variable "github_token" {
-  description = "GitHub Personal Access Token for triggering workflows"
-  type        = string
-  sensitive   = true
-}
-
-variable "github_repo" {
-  description = "GitHub repo to trigger the CI pipeline"
-  type        = string
-  default     = "dzaky-pr/fp-pso"
-}
-
-variable "github_branch" {
-  description = "Branch to trigger the CI pipeline"
-  type        = string
-  default     = "main"
 }

@@ -31,6 +31,14 @@ jobs:
         with:
           terraform_version: 1.6.6
 
+      - name: 🌱 Setup tfvars
+        env:
+          KEY_PAIR_NAME: ${{ secrets.KEY_PAIR_NAME }}
+          VPC_ID: ${{ secrets.VPC_ID }}
+        run: |
+          echo "key_pair_name = \"$KEY_PAIR_NAME\"" > terraform/terraform.tfvars
+          echo "vpc_id = \"$VPC_ID\"" >> terraform/terraform.tfvars
+
       - name: 🌱 Terraform Init
         run: terraform -chdir=./terraform init
         env:
