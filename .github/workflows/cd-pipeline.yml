@@ -79,33 +79,24 @@ jobs:
           echo "Deploying version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: ☁ Download Artifact by Version
-        uses: jakejarvis/s3-sync-action@v0.5.1
-        with:
-          args: --exact-timestamps
-        env:
-          AWS_S3_BUCKET: ${{ steps.tf_output.outputs.artifact_bucket }}
-          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.cd_access_key_id }}
-          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.cd_secret_access_key }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-          SOURCE_DIR: "${{ steps.version.outputs.version }}/"
-          DEST_DIR: latest_artifact/
-
-      - name: 🖥 Deploy to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ steps.tf_output.outputs.production_public_ip }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "latest_artifact/*"
-          target: "~/deploy"
-
-      - name: 🔄 Restart App (optional)
+      - name: 🖥 Deploy to EC2 via SSH Script
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ steps.tf_output.outputs.production_public_ip }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo pm2 restart book-library --interpreter node -- ~/deploy/standalone/server.js
-            sudo pm2 
+            set -e
+            ARTIFACT_BUCKET="${{ steps.tf_output.outputs.artifact_bucket }}"
+            AWS_REGION="${{ env.AWS_REGION }}"
+
+            # Clean previous deploy folder
+            rm -rf deploy
+            mkdir -p deploy
+
+            # Download latest artifact version from S3
+            aws s3 sync s3://$ARTIFACT_BUCKET/$VERSION/ deploy --region $AWS_REGION
+
+            # Optional: Restart PM2 or run your Node app
+            # pm2 restart book-library || pm2 start ~/deploy/standalone/server.js --name book-library
+            node ~/deploy/standalone/server.js

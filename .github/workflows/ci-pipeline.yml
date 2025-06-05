@@ -78,7 +78,11 @@ jobs:
           npm run typecheck
 
       - name: 🧪 Run Unit Tests
-        run: npm test
+        run: npm test -- --verbose
+
+      - name: 🏗 Setup .env
+        run: |
+          echo "AWS_API_URL=${{ steps.tf_output.outputs.api_gateway_url }}" >> .env
 
       - name: 🏗 Build Next.js App
         run: npm run build
