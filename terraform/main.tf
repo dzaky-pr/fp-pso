@@ -2,6 +2,15 @@ provider "aws" {
   region = var.aws_region
 }
 
+terraform {
+  backend "s3" {
+    bucket         = "tf-state-bucket-booklibrary"
+    key            = "terraform.tfstate"
+    region         = "ap-southeast-1"
+    encrypt        = true
+  }
+}
+
 resource "random_id" "suffix" {
   # Random ID for unique resource names
   byte_length = 4
@@ -420,8 +429,8 @@ resource "aws_iam_policy" "s3_access" {
         "s3:ListBucket"
       ],
       Resource = [
-        "arn:aws:s3:::${var.artifact_bucket}",
-        "arn:aws:s3:::${var.artifact_bucket}/*"
+        "arn:aws:s3:::${aws_s3_bucket.artifact.bucket}",
+        "arn:aws:s3:::${aws_s3_bucket.artifact.bucket}/*"
       ]
     }]
   })
@@ -525,30 +534,29 @@ resource "aws_instance" "production" {
               fi
 
               # Start using PM2
-              pm2 start server.js --name book-library
+              pm2 start "sleep 9999" --interpreter bash --name book-library
               pm2 save
-              pm2 startup systemd -u ubuntu --hp /home/ubuntu
               EOF
 
   depends_on = [
-    aws_iam_role_policy_attachment.attach_s3_policy,
-    null_resource.trigger_ci_pipeline
+    aws_iam_role_policy_attachment.attach_s3_policy
+    # null_resource.trigger_ci_pipeline
   ]
 }
 
 
-resource "null_resource" "trigger_ci_pipeline" {
-  provisioner "local-exec" {
-    command = <<EOT
-      curl -X POST \
-        -H "Authorization: token ${var.github_token}" \
-        -H "Accept: application/vnd.github+json" \
-        https://api.github.com/repos/${var.github_repo}/actions/workflows/ci-pipeline.yml/dispatches \
-        -d '{"ref": "${var.github_branch}"}'
-    EOT
-  }
+# resource "null_resource" "trigger_ci_pipeline" {
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       curl -X POST \
+#         -H "Authorization: token ${var.github_token}" \
+#         -H "Accept: application/vnd.github+json" \
+#         https://api.github.com/repos/${var.github_repo}/actions/workflows/ci-pipeline.yml/dispatches \
+#         -d '{"ref": "${var.github_branch}"}'
+#     EOT
+#   }
 
-  depends_on = [
-    aws_s3_bucket.artifact
-  ]
-}
+#   depends_on = [
+#     aws_s3_bucket.artifact
+#   ]
+# }
