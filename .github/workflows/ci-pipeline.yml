@@ -41,7 +41,7 @@ jobs:
       - name: 📦 Terraform Output
         id: tf_output
         run: |
-          terraform output -json > tf_output.json
+          terraform -chdir=./terraform output -json > tf_output.json
           echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "ci_access_key_id=$(jq -r '.ci_access_key_id.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "ci_secret_access_key=$(jq -r '.ci_secret_access_key.value' tf_output.json)" >> $GITHUB_OUTPUT
