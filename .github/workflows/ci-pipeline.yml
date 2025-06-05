@@ -15,11 +15,9 @@ jobs:
       AWS_REGION: ap-southeast-1
 
     steps:
-      # ⬇ Checkout repository
-      - name: ⬇ Checkout Code
+      - name: ⬇ Checkout Code (repository)
         uses: actions/checkout@v4
 
-      # ⚙ Setup Node.js
       - name: ⎔ Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -71,30 +69,30 @@ jobs:
           echo "API Gateway URL: ${{ steps.tf_output.outputs.api_gateway_url }}"
           echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
 
-      # 📥 Install dependencies
       - name: 📦 Install Dependencies
         run: npm ci
 
-      # ✅ Lint, Typecheck, and Test
-      - name: 🧪 Biome, Typecheck, and Test
+      - name: 🔍 Lint & Typecheck
         run: |
-          npm run check
+          npm run lint
           npm run typecheck
 
-      - name: 🏗 Build App
-        run: npm run build
-        env:
-          AWS_API_URL: ${{ steps.tf_output.outputs.api_gateway_url }}
+      - name: 🧪 Run Unit Tests
+        run: npm test
 
-      # 📦 Prepare Artifact
-      - name: 📦 Package Artifacts
+      - name: 🌐 Run E2E Tests (Playwright)
+        run: npm run e2e
+
+      - name: 🏗 Build Next.js App
+        run: npm run build
+
+      - name: 📦 Prepare Package Artifacts
         run: |
           mkdir -p artifact
           cp -r .next/static .next/standalone/.next
           cp -r .next/standalone artifact/
 
-      # ☁ Upload to S3 (versioned by commit SHA)
-      - name: ☁ Upload to S3
+      - name: ☁ Upload to S3 (versioned by commit SHA)
         uses: jakejarvis/s3-sync-action@v0.5.1
         with:
           args: --exact-timestamps
@@ -106,8 +104,7 @@ jobs:
           SOURCE_DIR: ./artifact
           DEST_DIR: ${{ github.sha }}
 
-      # 📄 Backup latest.txt to previous.txt (if it exists)
-      - name: 📄 Backup latest.txt (if it exists)
+      - name: 📄 Backup latest.txt to previous.txt (if it exists)
         run: |
           set +e
           aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt ./latest.txt
@@ -122,8 +119,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      # 📄 Write and Upload latest.txt
-      - name: 📄 Upload latest.txt
+      - name: 📄 Write and Upload latest.txt
         run: |
           echo "${{ github.sha }}" > latest.txt
           aws s3 cp latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt
@@ -133,6 +129,5 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      # 🧹 Clean previous artifacts
       - name: 🧹 Clean previous artifacts
         run: rm -rf artifact && mkdir artifact
