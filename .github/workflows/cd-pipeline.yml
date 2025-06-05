@@ -85,6 +85,7 @@ jobs:
           script: |
             sudo pm restart your-app.service
 
-      - name: 🔥 Post-Deploy Smoke Test
-        run: |
-          echo "Running smoke test..."
+      - name: 🔥 Post-Deploy Smoke Test UI
+        env:
+          SMOKE_UI_URL: "https://staging.your-app.com"
+        run: npm run smoke-ui
