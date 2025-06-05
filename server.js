@@ -83,13 +83,22 @@ app.get("/health", (_req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  // console.log(`🚀 Local API server running on http://localhost:${PORT}`);
-  // console.log(`📝 API endpoints:`);
-  // console.log(`   GET    http://localhost:${PORT}/api/books`);
-  // console.log(`   GET    http://localhost:${PORT}/api/books/{id}`);
-  // console.log(`   PUT    http://localhost:${PORT}/api/books`);
-  // console.log(`   DELETE http://localhost:${PORT}/api/books/{id}`);
-  // console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`🚀 Local API server running on http://localhost:${PORT}`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`📝 API endpoints:`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`   GET    http://localhost:${PORT}/api/books`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`   GET    http://localhost:${PORT}/api/books/{id}`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`   PUT    http://localhost:${PORT}/api/books`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`   DELETE http://localhost:${PORT}/api/books/{id}`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log();
 });
 
 module.exports = app;

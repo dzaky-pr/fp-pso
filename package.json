@@ -25,7 +25,7 @@
     "db:stop": "docker-compose down",
     "db:test": "node local-lambda.js",
     "api:start": "node server.js",
-    "dev:full": "npm run db:start && npm run api:start && npm run dev",
+    "dev:full": "npm run db:start && concurrently \"npm run api:start\" \"npm run dev\"",
     "smoke-ui": "npx playwright test playwright_test/smoke.spec.ts --timeout=30000"
   },
   "dependencies": {
@@ -51,6 +51,7 @@
     "@types/node": "22.15.29",
     "@types/react": "18.3.23",
     "@types/react-dom": "^18.3.7",
+    "concurrently": "^9.1.2",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "husky": "^9.1.7",
