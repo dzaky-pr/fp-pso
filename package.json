@@ -25,7 +25,7 @@
     "db:stop": "docker-compose down",
     "db:test": "node local-lambda.js",
     "api:start": "node server.js",
-    "dev:full": "npm run db:start && npm run api:start & npm run dev",
+    "dev:full": "npm run db:start && npm run api:start && npm run dev",
     "smoke-ui": "npx playwright test playwright_test/smoke.spec.ts --timeout=30000"
   },
   "dependencies": {
