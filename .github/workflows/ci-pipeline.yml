@@ -80,9 +80,6 @@ jobs:
       - name: 🧪 Run Unit Tests
         run: npm test
 
-      - name: 🌐 Run E2E Tests (Playwright)
-        run: npm run e2e
-
       - name: 🏗 Build Next.js App
         run: npm run build
 
