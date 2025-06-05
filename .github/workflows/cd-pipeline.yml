@@ -85,14 +85,14 @@ jobs:
           host: ${{ steps.tf_output.outputs.production_public_ip }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          env:
+            ARTIFACT_BUCKET: ${{ steps.tf_output.outputs.artifact_bucket }}
+            AWS_REGION: ${{ env.AWS_REGION }}
+            VERSION: ${{ steps.version.outputs.version }}
           script: |
-            set -e
-            ARTIFACT_BUCKET="${{ steps.tf_output.outputs.artifact_bucket }}"
-            AWS_REGION="${{ env.AWS_REGION }}"
-
             # Clean previous deploy folder
-            rm -rf deploy
-            mkdir -p deploy
+            rm -rf ~/deploy
+            mkdir -p ~/deploy
 
             # Download latest artifact version from S3
             aws s3 sync s3://$ARTIFACT_BUCKET/$VERSION/ deploy --region $AWS_REGION
