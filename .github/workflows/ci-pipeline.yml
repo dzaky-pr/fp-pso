@@ -42,6 +42,7 @@ jobs:
         id: tf_output
         run: |
           terraform -chdir=./terraform output -json > tf_output.json
+          echo "api_gateway_url=$(jq -r '.api_gateway_url.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "ci_access_key_id=$(jq -r '.ci_access_key_id.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "ci_secret_access_key=$(jq -r '.ci_secret_access_key.value' tf_output.json)" >> $GITHUB_OUTPUT
@@ -49,6 +50,11 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: ✅ Check Terraform Output
+        run: |
+          echo "API Gateway URL: ${{ steps.tf_output.outputs.api_gateway_url }}"
+          echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
 
       # 📥 Install dependencies
       - name: 📦 Install Dependencies
@@ -60,9 +66,10 @@ jobs:
           npm run check
           npm run typecheck
 
-      # 🏗 Build Next.js App
       - name: 🏗 Build App
         run: npm run build
+        env:
+          AWS_API_URL: ${{ steps.tf_output.outputs.api_gateway_url }}
 
       # 📦 Prepare Artifact
       - name: 📦 Package Artifacts
