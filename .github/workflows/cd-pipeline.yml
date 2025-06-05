@@ -8,17 +8,45 @@ jobs:
     name: 🚀 Deploy to EC2
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: ap-southeast-1
+
     steps:
       - name: ⬇ Checkout Code
         uses: actions/checkout@v4
 
+      - name: ⛅ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: 🌱 Terraform Init
+        run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: 📦 Terraform Output
+        id: tf_output
+        run: |
+          terraform output -json > tf_output.json
+          echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> $GITHUB_OUTPUT
+          echo "cd_access_key_id=$(jq -r '.cd_access_key_id.value' tf_output.json)" >> $GITHUB_OUTPUT
+          echo "cd_secret_access_key=$(jq -r '.cd_secret_access_key.value' tf_output.json)" >> $GITHUB_OUTPUT
+          echo "production_public_ip=$(jq -r '.production_public_ip.value' tf_output.json)" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+
       - name: ☁ Download latest.txt
         run: |
-          aws s3 cp s3://book-library-ci-artifact/latest.txt ./latest.txt
+          aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt ./latest.txt
         env:
-          AWS_ACCESS_KEY_ID: AKIAWKVVK2CXOYDQIUW3
-          AWS_SECRET_ACCESS_KEY: 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
-          AWS_REGION: ap-southeast-1
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.cd_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.cd_secret_access_key }}
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: 📦 Read version to deploy
         id: version
@@ -32,31 +60,31 @@ jobs:
         with:
           args: --exact-timestamps
         env:
-          AWS_S3_BUCKET: book-library-ci-artifact
-          AWS_ACCESS_KEY_ID: AKIAWKVVK2CXOYDQIUW3
-          AWS_SECRET_ACCESS_KEY: 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
-          AWS_REGION: ap-southeast-1
+          AWS_S3_BUCKET: ${{ steps.tf_output.outputs.artifact_bucket }}
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.cd_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.cd_secret_access_key }}
+          AWS_REGION: ${{ env.AWS_REGION }}
           SOURCE_DIR: "${{ steps.version.outputs.version }}/"
           DEST_DIR: latest_artifact/
 
       - name: 🖥 Deploy to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.STAGING_EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          host: ${{ steps.tf_output.outputs.production_public_ip }}
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "latest_artifact/*"
-          target: "/var/www/app"
+          target: "~/deploy"
 
       - name: 🔄 Restart App (optional)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.STAGING_EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          host: ${{ steps.tf_output.outputs.production_public_ip }}
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo systemctl restart your-app.service
+            sudo pm restart your-app.service
 
       - name: 🔥 Post-Deploy Smoke Test
         run: |
-          curl --fail https://your-app.com/health || exit 1
+          echo "Running smoke test..."

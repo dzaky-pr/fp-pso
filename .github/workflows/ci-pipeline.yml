@@ -1,7 +1,7 @@
 name: 🛠 CI Pipeline
 
 on:
-  workflow_dispatch: # Allow manual or Terraform API trigger
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -25,6 +25,30 @@ jobs:
         with:
           node-version: 18
           cache: "npm"
+
+      - name: ⛅ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: 🌱 Terraform Init
+        run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: 📦 Terraform Output
+        id: tf_output
+        run: |
+          terraform output -json > tf_output.json
+          echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> $GITHUB_OUTPUT
+          echo "ci_access_key_id=$(jq -r '.ci_access_key_id.value' tf_output.json)" >> $GITHUB_OUTPUT
+          echo "ci_secret_access_key=$(jq -r '.ci_secret_access_key.value' tf_output.json)" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       # 📥 Install dependencies
       - name: 📦 Install Dependencies
@@ -53,9 +77,9 @@ jobs:
         with:
           args: --exact-timestamps
         env:
-          AWS_S3_BUCKET: book-library-artifact-208537f6
-          AWS_ACCESS_KEY_ID: AKIAWKVVK2CXIOCDJUON
-          AWS_SECRET_ACCESS_KEY: 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
+          AWS_S3_BUCKET: ${{ steps.tf_output.outputs.artifact_bucket }}
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
           SOURCE_DIR: ./artifact
           DEST_DIR: ${{ github.sha }}
@@ -64,27 +88,27 @@ jobs:
       - name: 📄 Backup latest.txt (if it exists)
         run: |
           set +e
-          aws s3 cp s3://book-library-artifact-208537f6/latest.txt ./latest.txt
+          aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt ./latest.txt
           if [ -f latest.txt ]; then
             echo "✅ Found latest.txt, backing up to previous.txt"
-            aws s3 cp ./latest.txt s3://book-library-artifact-208537f6/previous.txt
+            aws s3 cp ./latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/previous.txt
           else
             echo "ℹ️ No latest.txt found, skipping backup."
           fi
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
       # 📄 Write and Upload latest.txt
       - name: 📄 Upload latest.txt
         run: |
           echo "${{ github.sha }}" > latest.txt
-          aws s3 cp latest.txt s3://book-library-artifact-208537f6/latest.txt
+          aws s3 cp latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt
           echo "✅ latest.txt now points to ${{ github.sha }}"
         env:
-          AWS_ACCESS_KEY_ID: AKIAWKVVK2CXIOCDJUON
-          AWS_SECRET_ACCESS_KEY: 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
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
       # 🧹 Clean previous artifacts

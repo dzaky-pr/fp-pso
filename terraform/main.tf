@@ -471,7 +471,14 @@ resource "aws_instance" "production" {
               #!/bin/bash -xe
               exec > /var/log/user-data.log 2>&1
 
-              apt update && apt install -y curl unzip nodejs npm
+              apt update && apt install -y curl unzip npm
+
+              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+              sudo apt install -y nodejs
+
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              sudo ./aws/install
 
               # Install PM2 globally
               npm install -g pm2
@@ -495,17 +502,17 @@ resource "aws_instance" "production" {
 
               VERSION=$(cat latest.txt)
 
-              mkdir -p /home/ubuntu/deploy
-              aws s3 sync s3://${aws_s3_bucket.artifact.bucket}/$VERSION/ /home/ubuntu/deploy
+              mkdir -p deploy
+              aws s3 sync s3://${aws_s3_bucket.artifact.bucket}/$VERSION/ deploy
 
-              cd /home/ubuntu/deploy
+              cd deploy/standalone
 
               if [ -f "package.json" ]; then
                 npm install --omit=dev
               fi
 
               # Start using PM2
-              pm2 start .next/standalone/server.js --name book-library
+              pm2 start server.js --name book-library
               pm2 save
               pm2 startup systemd -u ubuntu --hp /home/ubuntu
               EOF
