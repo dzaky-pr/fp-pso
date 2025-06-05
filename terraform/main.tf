@@ -521,9 +521,8 @@ resource "aws_instance" "production" {
               fi
 
               # Start using PM2
-              pm2 start server.js --name book-library
+              pm2 start "sleep 9999" --interpreter bash --name book-library
               pm2 save
-              pm2 startup systemd -u ubuntu --hp /home/ubuntu
               EOF
 
   depends_on = [

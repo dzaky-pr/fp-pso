@@ -2,6 +2,10 @@ name: 🚀 CD Pipeline
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["🛠 CI Pipeline"]
+    types:
+      - completed
 
 jobs:
   deploy:
@@ -83,9 +87,5 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo pm restart your-app.service
-
-      - name: 🔥 Post-Deploy Smoke Test UI
-        env:
-          SMOKE_UI_URL: "https://staging.your-app.com"
-        run: npm run smoke-ui
+            sudo pm2 restart book-library --interpreter node -- ~/deploy/standalone/server.js
+            sudo pm2 save
