@@ -3,7 +3,7 @@ import Link from "next/link";
 
 function BookCard({ book }: { book: IBook }) {
   return (
-    <div className="rounded-2xl p-6 backdrop-blur-md bg-white/50 dark:bg-white/10 shadow-md border border-white/30 dark:border-white/20 transition hover:shadow-xl hover:scale-[1.02] duration-300">
+    <div data-testid="book-card" className="rounded-2xl p-6 backdrop-blur-md bg-white/50 dark:bg-white/10 shadow-md border border-white/30 dark:border-white/20 transition hover:shadow-xl hover:scale-[1.02] duration-300">
       <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
         {book.title}
       </h3>
