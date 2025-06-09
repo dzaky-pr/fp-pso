@@ -26,9 +26,7 @@
     "db:test": "node local-lambda.js",
     "api:start": "node server.js",
     "dev:full": "npm run db:start && concurrently \"npm run api:start\" \"npm run dev\"",
-    "smoke-ui": "npx playwright test playwright_test/smoke.spec.ts --timeout=30000",
-    "smoke-dark": "npx playwright test playwright_test/darkmode.spec.ts --timeout=30000",
-    "smoke-search": "npx playwright test playwright_test/search.spec.ts --timeout=30000"
+    "smoke": "npx playwright test playwright_test/darkmode.spec.ts playwright_test/search.spec.ts playwright_test/smoke.spec.ts --timeout=30000"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.0.0",

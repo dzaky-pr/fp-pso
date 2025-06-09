@@ -101,3 +101,13 @@ jobs:
             # Optional: Restart PM2 or run your Node app
             pm2 restart book-library || pm2 start ~/deploy/standalone/server.js --name book-library
             pm2 save
+      
+      - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
+        run: |
+          echo "Waiting for server to be ready..."
+          sleep 15
+          npm ci
+          npx playwright install --with-deps
+          npm run smoke
+        env:
+          SMOKE_UI_URL: http://${{ steps.tf_output.outputs.production_public_ip }}:3000

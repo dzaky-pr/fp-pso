@@ -25,7 +25,10 @@ test.describe("CRUD Buku via UI", () => {
     await page.fill('input[name="title"]', originalTitle);
     await page.fill('input[name="author"]', "Test Author");
     await page.fill('input[name="price"]', "19.99");
-    await page.fill('textarea[name="description"]', "Deskripsi untuk buku test.");
+    await page.fill(
+      'textarea[name="description"]',
+      "Deskripsi untuk buku test.",
+    );
     // 3) Submit form
     await page.click('button[type="submit"]');
     // 4) Tunggu redirect ke halaman utama
@@ -33,7 +36,9 @@ test.describe("CRUD Buku via UI", () => {
     // 5) Tunggu kartu buku muncul
     await page.waitForSelector('[data-testid="book-card"]', { timeout: 10000 });
     // 6) Verifikasi kartu dengan judul yang sesuai
-    const addedCard = page.locator(`[data-testid="book-card"]:has-text("${originalTitle}")`);
+    const addedCard = page.locator(
+      `[data-testid="book-card"]:has-text("${originalTitle}")`,
+    );
     await expect(addedCard).toHaveCount(1);
   });
 
@@ -41,21 +46,29 @@ test.describe("CRUD Buku via UI", () => {
     // 1) Kembali ke homepage
     await page.goto(`${BASE_URL}/`);
     // 2) Klik 'View Book' pada card yang sesuai
-    const card = page.locator(`[data-testid="book-card"]:has-text("${originalTitle}")`);
+    const card = page.locator(
+      `[data-testid="book-card"]:has-text("${originalTitle}")`,
+    );
     const viewButton = card.locator('button:has-text("View Book")');
     await expect(viewButton).toHaveCount(1);
     await viewButton.click();
     // 3) Tunggu navigasi ke URL detail (angka saja)
     await page.waitForURL(/\/\d+$/);
     // 4) Verifikasi nilai field
-    await expect(page.locator('input[name="title"]')).toHaveValue(originalTitle);
-    await expect(page.locator('input[name="author"]')).toHaveValue("Test Author");
+    await expect(page.locator('input[name="title"]')).toHaveValue(
+      originalTitle,
+    );
+    await expect(page.locator('input[name="author"]')).toHaveValue(
+      "Test Author",
+    );
   });
 
   test("Edit existing book", async ({ page }) => {
     // 1) Kembali ke homepage dan buka detail buku asli
     await page.goto(`${BASE_URL}/`);
-    const card = page.locator(`[data-testid="book-card"]:has-text("${originalTitle}")`);
+    const card = page.locator(
+      `[data-testid="book-card"]:has-text("${originalTitle}")`,
+    );
     const viewButton = card.locator('button:has-text("View Book")');
     await expect(viewButton).toHaveCount(1);
     await viewButton.click();
@@ -72,14 +85,18 @@ test.describe("CRUD Buku via UI", () => {
     // 5) Tunggu redirect kembali ke homepage
     await page.waitForURL(`${BASE_URL}/`);
     // 6) Verifikasi kartu dengan judul yang sudah diupdate
-    const updatedCard = page.locator(`[data-testid="book-card"]:has-text("${updatedTitle}")`);
+    const updatedCard = page.locator(
+      `[data-testid="book-card"]:has-text("${updatedTitle}")`,
+    );
     await expect(updatedCard).toHaveCount(1);
   });
 
   test("Remove book", async ({ page }) => {
     // 1) Kembali ke homepage dan buka detail buku yang sudah diupdate
     await page.goto(`${BASE_URL}/`);
-    const card = page.locator(`[data-testid="book-card"]:has-text("${updatedTitle}")`);
+    const card = page.locator(
+      `[data-testid="book-card"]:has-text("${updatedTitle}")`,
+    );
     const viewButton = card.locator('button:has-text("View Book")');
     await expect(viewButton).toHaveCount(1);
     await viewButton.click();
@@ -92,6 +109,8 @@ test.describe("CRUD Buku via UI", () => {
     await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
     // 4) Verifikasi kartu sudah tidak ada lagi
-    await expect(page.locator(`[data-testid="book-card"]:has-text("${updatedTitle}")`)).toHaveCount(0);
+    await expect(
+      page.locator(`[data-testid="book-card"]:has-text("${updatedTitle}")`),
+    ).toHaveCount(0);
   });
 });

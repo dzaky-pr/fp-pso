@@ -5,8 +5,8 @@ const BASE_URL = process.env.SMOKE_UI_URL || "http://localhost:3000";
 
 test.describe("Dark Mode Smoke Tests", () => {
   const pages = [
-    { name: "Home",        path: "/"     },
-    { name: "Add Book",    path: "/add"  },
+    { name: "Home", path: "/" },
+    { name: "Add Book", path: "/add" },
     // NOTE: ubah "1234" jadi ID yang valid jika butuh test detail;
     // kalau belum ada buku, pakai ID random atau buat buku dulu
     { name: "Book Detail", path: "/1" },
