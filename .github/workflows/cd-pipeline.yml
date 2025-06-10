@@ -40,6 +40,7 @@ jobs:
           echo "cd_access_key_id=$(jq -r '.cd_access_key_id.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "cd_secret_access_key=$(jq -r '.cd_secret_access_key.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "production_public_ip=$(jq -r '.production_public_ip.value' tf_output.json)" >> "$GITHUB_OUTPUT"
+          echo "staging_public_ip=$(jq -r '.staging_public_ip.value' tf_output.json)" >> "$GITHUB_OUTPUT"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -50,6 +51,7 @@ jobs:
           echo "API Gateway URL: ${{ steps.tf_output.outputs.api_gateway_url }}"
           echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
           echo "Production Public IP: ${{ steps.tf_output.outputs.production_public_ip }}"
+          echo "Staging Public IP: ${{ steps.tf_output.outputs.Staging_public_ip }}"
 
       - name: ☁ Download latest.txt
         run: |
@@ -66,7 +68,61 @@ jobs:
           echo "Deploying version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: 🖥 Deploy to EC2 Staging via SSH Script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ steps.tf_output.outputs.staging_public_ip }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            ARTIFACT_BUCKET="${{ steps.tf_output.outputs.artifact_bucket }}"
+            AWS_REGION="${{ env.AWS_REGION }}"
+            VERSION="${{ steps.version.outputs.version }}"
+
+            # Clean and prepare deploy folder
+            sudo chown -R ubuntu:ubuntu ~/deploy
+            rm -rf ~/deploy
+            mkdir -p ~/deploy
+
+            # Download the ZIP artifact from S3
+            aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
+
+            # Unzip it to the deploy folder
+            unzip ~/artifact.zip -d ~/deploy
+
+            cd deploy/artifact/standalone
+            chmod +rwx server.js
+            chmod +rwx package.json
+
+            # Restart PM2 with the new code
+            pm2 restart book-library || pm2 start server.js --name book-library
+            pm2 save
+
+      - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
+        id: staging_smoke_tests
+        run: |
+          echo "Waiting for server to be ready..."
+          sleep 15
+
+          # Simpan HTTP status code ke dalam variabel
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.tf_output.outputs.api_gateway_url }}/health)
+
+          # Periksa apakah status code bukan 200
+          if [ "$STATUS_CODE" -ne 200 ]; then
+            echo "Health check failed with status code: $STATUS_CODE"
+            exit 1 # Keluar dengan error, step ini akan gagal
+          else
+            echo "Health check successful with status 200. Proceeding with tests."
+          fi
+
+          npm ci
+          npx playwright install --with-deps
+          npm run smoke
+        env:
+          SMOKE_UI_URL: http://${{ steps.tf_output.outputs.staging_public_ip }}:3000
+
       - name: 🖥 Deploy to EC2 via SSH Script
+        if: staging_smoke_tests.outcome == 'success'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ steps.tf_output.outputs.production_public_ip }}
@@ -97,6 +153,8 @@ jobs:
             pm2 save
 
       - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
+        id: production_smoke_tests
+        if: staging_smoke_tests.outcome == 'success'
         run: |
           echo "Waiting for server to be ready..."
           sleep 15
@@ -117,3 +175,40 @@ jobs:
           npm run smoke
         env:
           SMOKE_UI_URL: http://${{ steps.tf_output.outputs.production_public_ip }}:3000
+
+      - name: 📄 Rollback to Previous Success Version
+        if: staging_smoke_tests.outcome == 'failure'
+        run: |
+          aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/previous.txt previous.txt
+
+          VERSION=$(cat previous.txt)
+
+          if [ -z "$VERSION" ]; then
+            echo "::error::Failed to read version from previous.txt. The file might be empty."
+            exit 1
+          fi
+
+          echo "Rolling back latest.txt to version: $VERSION"
+          echo "$VERSION" > latest.txt
+          aws s3 cp latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt
+
+          echo "✅ Rolled back: latest.txt now points to $VERSION"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: 🖥 Stop Deployment in Staging EC2
+        if: always()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ steps.tf_output.outputs.staging_public_ip }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Stop Running pm2 Process
+            pm2 stop book-library
+
+            # Clean and prepare deploy folder
+            sudo chown -R ubuntu:ubuntu ~/deploy
+            rm -rf ~/deploy
