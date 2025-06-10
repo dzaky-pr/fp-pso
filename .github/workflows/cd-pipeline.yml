@@ -44,7 +44,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_REGION: ${{ env.AWS_REGION }}+
 
       - name: ✅ Check Terraform Output
         run: |
@@ -87,7 +87,7 @@ jobs:
             # Download the ZIP artifact from S3
             aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
 
-            # Unzip it to the deploy folder
+            # Unzip it to the deploy folder 
             unzip ~/artifact.zip -d ~/deploy
 
             cd deploy/artifact/standalone
@@ -122,7 +122,7 @@ jobs:
           SMOKE_UI_URL: http://${{ steps.tf_output.outputs.staging_public_ip }}:3000
 
       - name: 🖥 Deploy to EC2 via SSH Script
-        if: staging_smoke_tests.outcome == 'success'
+        if: steps.staging_smoke_tests.outcome == 'success'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ steps.tf_output.outputs.production_public_ip }}
@@ -154,7 +154,7 @@ jobs:
 
       - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
         id: production_smoke_tests
-        if: staging_smoke_tests.outcome == 'success'
+        if: steps.staging_smoke_tests.outcome == 'success'
         run: |
           echo "Waiting for server to be ready..."
           sleep 15
@@ -177,7 +177,7 @@ jobs:
           SMOKE_UI_URL: http://${{ steps.tf_output.outputs.production_public_ip }}:3000
 
       - name: 📄 Rollback to Previous Success Version
-        if: staging_smoke_tests.outcome == 'failure'
+        if: steps.staging_smoke_tests.outcome == 'failure'
         run: |
           aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/previous.txt previous.txt
 
