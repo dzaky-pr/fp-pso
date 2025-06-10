@@ -104,6 +104,8 @@ jobs:
           echo "Waiting for server to be ready..."
           sleep 15
 
+          exit 1
+
           # Simpan HTTP status code ke dalam variabel
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.tf_output.outputs.api_gateway_url }}/health)
 
