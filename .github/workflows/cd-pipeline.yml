@@ -47,7 +47,7 @@ jobs:
 
       - name: ✅ Check Terraform Output
         run: |
-          echo "API Gateway URL: ${{ steps.tf_output.outputs.aws_api_url }}"
+          echo "API Gateway URL: ${{ steps.tf_output.outputs.api_gateway_url }}"
           echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
           echo "Production Public IP: ${{ steps.tf_output.outputs.production_public_ip }}"
 
@@ -102,7 +102,7 @@ jobs:
           sleep 15
 
           # Simpan HTTP status code ke dalam variabel
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.tf_output.outputs.aws_api_url }}/health)
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.tf_output.outputs.api_gateway_url }}/health)
 
           # Periksa apakah status code bukan 200
           if [ "$STATUS_CODE" -ne 200 ]; then
