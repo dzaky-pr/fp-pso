@@ -509,6 +509,8 @@ resource "aws_instance" "staging" {
 
               # Install PM2 globally
               npm install -g pm2
+
+              mkdir -p deploy
               EOF
 }
 
