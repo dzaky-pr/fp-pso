@@ -324,6 +324,17 @@ resource "aws_lambda_permission" "allow_api_health" {
 
 # --- SNS Topic for Alerts ---
 
+resource "aws_sns_topic_subscription" "email_alerts" {
+  for_each  = toset(var.alert_emails)
+  topic_arn = aws_sns_topic.lambda_errors.arn
+  protocol  = "email"
+  endpoint  = each.value
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "aws_sns_topic" "lambda_errors" {
   name = var.sns_topic_name
 }
@@ -347,6 +358,29 @@ resource "aws_cloudwatch_metric_alarm" "lambda_error_alarm" {
 
   alarm_actions = [aws_sns_topic.lambda_errors.arn]
   ok_actions    = [aws_sns_topic.lambda_errors.arn] # Optional: Notify when OK too
+}
+
+resource "aws_cloudwatch_metric_alarm" "ec2_status_check_failed" {
+  alarm_name          = "ec2-status-check-failed-${random_id.suffix.hex}"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 2
+  metric_name         = "StatusCheckFailed"
+  namespace           = "AWS/EC2"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    InstanceId = aws_instance.production.id
+  }
+
+  alarm_actions = [
+    aws_sns_topic.lambda_errors.arn, # reuse same SNS topic
+  ]
+  ok_actions = [
+    aws_sns_topic.lambda_errors.arn,
+  ]
 }
 
 

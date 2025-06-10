@@ -57,7 +57,13 @@ variable "api_name" {
 variable "sns_topic_name" {
   description = "Name for the SNS Topic for alerts"
   type        = string
-  default     = "BookLibraryLambdaErrors"
+  default     = "BookLibraryErrors"
+}
+
+variable "alert_emails" {
+  description = "List of emails to alert to"
+  type        = list(string)
+  default     = ["fransnicklaus101004@gmail.com", "darrell.valentino14@gmail.com", "titovirgiawan21@gmail.com", "dzakyfordev@gmail.con"]
 }
 
 variable "lambda_code_path" {
