@@ -76,6 +76,7 @@ jobs:
             VERSION="${{ steps.version.outputs.version }}"
 
             # Clean and prepare deploy folder
+            sudo chown -R ubuntu:ubuntu ~/deploy
             rm -rf ~/deploy
             mkdir -p ~/deploy
 
