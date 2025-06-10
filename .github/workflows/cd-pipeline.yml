@@ -85,8 +85,12 @@ jobs:
             # Unzip it to the deploy folder
             unzip ~/artifact.zip -d ~/deploy
 
+            cd deploy/artifact/standalone
+            chmod +rwx server.js
+            chmod +rwx package.json
+
             # Restart PM2 with the new code
-            pm2 restart book-library || pm2 start ~/deploy/standalone/server.js --name book-library
+            pm2 restart book-library || pm2 start server.js --name book-library
             pm2 save
 
       - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)

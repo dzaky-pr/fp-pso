@@ -560,16 +560,19 @@ resource "aws_instance" "production" {
               VERSION=$(cat latest.txt)
 
               mkdir -p deploy
-              aws s3 sync s3://${aws_s3_bucket.artifact.bucket}/$VERSION/ deploy
 
-              cd deploy/standalone
+              # Download the ZIP artifact from S3
+              aws s3 cp s3://${aws_s3_bucket.artifact.bucket}/$VERSION artifact.zip
 
-              if [ -f "package.json" ]; then
-                npm install --omit=dev
-              fi
+              # Unzip it to the deploy folder
+              unzip artifact.zip -d deploy
+
+              cd deploy/artifact/standalone
+              chmod +rwx server.js
+              chmod +rwx package.json
 
               # Start using PM2
-              pm2 start "sleep 9999" --interpreter bash --name book-library
+              pm2 start server.js --name book-library
               pm2 save
               EOF
 
