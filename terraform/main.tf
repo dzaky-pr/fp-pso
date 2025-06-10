@@ -19,6 +19,7 @@ resource "random_id" "suffix" {
 # --- S3 Bucket ---
 resource "aws_s3_bucket" "artifact" {
   bucket = "${var.artifact_bucket_name}-${random_id.suffix.hex}"
+  force_destroy = true # Allows deletion of non-empty bucket
 
   tags = {
     Name        = "${var.artifact_bucket_name}-${random_id.suffix.hex}"

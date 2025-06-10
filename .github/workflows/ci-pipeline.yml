@@ -44,13 +44,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: 🌱 Terraform Apply
-        run: terraform -chdir=./terraform apply -auto-approve
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-
       - name: 📦 Terraform Output
         id: tf_output
         run: |
@@ -93,17 +86,17 @@ jobs:
           cp -r .next/static .next/standalone/.next
           cp -r .next/standalone artifact/
 
-      - name: ☁ Upload to S3 (versioned by commit SHA)
-        uses: jakejarvis/s3-sync-action@v0.5.1
-        with:
-          args: --exact-timestamps
+      - name: 📦 Zip Artifacts
+        run: |
+          zip -r artifact.zip artifact
+
+      - name: ☁ Upload Artifact Zip to S3
+        run: |
+          aws s3 cp artifact.zip s3://${{ steps.tf_output.outputs.artifact_bucket }}/${{ github.sha }}.zip
         env:
-          AWS_S3_BUCKET: ${{ steps.tf_output.outputs.artifact_bucket }}
           AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
-          SOURCE_DIR: ./artifact
-          DEST_DIR: ${{ github.sha }}
 
       - name: 📄 Backup latest.txt to previous.txt (if it exists)
         run: |
@@ -122,13 +115,15 @@ jobs:
 
       - name: 📄 Write and Upload latest.txt
         run: |
-          echo "${{ github.sha }}" > latest.txt
+          echo "${{ github.sha }}.zip" > latest.txt
           aws s3 cp latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt
-          echo "✅ latest.txt now points to ${{ github.sha }}"
+          echo "✅ latest.txt now points to ${{ github.sha }}.zip"
         env:
           AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: 🧹 Clean previous artifacts
-        run: rm -rf artifact && mkdir artifact
+      - name: 🧹 Clean artifacts and zip
+        run: |
+          rm -rf artifact artifact.zip
+          mkdir artifact

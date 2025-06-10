@@ -24,23 +24,8 @@ jobs:
         with:
           terraform_version: 1.6.6
 
-      - name: 🌱 Setup tfvars
-        env:
-          KEY_PAIR_NAME: ${{ secrets.KEY_PAIR_NAME }}
-          VPC_ID: ${{ secrets.VPC_ID }}
-        run: |
-          echo "key_pair_name = \"$KEY_PAIR_NAME\"" > terraform/terraform.tfvars
-          echo "vpc_id = \"$VPC_ID\"" >> terraform/terraform.tfvars
-
       - name: 🌱 Terraform Init
         run: terraform -chdir=./terraform init
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-
-      - name: 🌱 Terraform Apply
-        run: terraform -chdir=./terraform apply -auto-approve
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -86,22 +71,24 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Set environment variables
             ARTIFACT_BUCKET="${{ steps.tf_output.outputs.artifact_bucket }}"
             AWS_REGION="${{ env.AWS_REGION }}"
             VERSION="${{ steps.version.outputs.version }}"
 
-            # Clean previous deploy folder
+            # Clean and prepare deploy folder
             rm -rf ~/deploy
             mkdir -p ~/deploy
 
-            # Download latest artifact version from S3
-            aws s3 sync s3://$ARTIFACT_BUCKET/$VERSION/ deploy --region $AWS_REGION
+            # Download the ZIP artifact from S3
+            aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
 
-            # Optional: Restart PM2 or run your Node app
+            # Unzip it to the deploy folder
+            unzip ~/artifact.zip -d ~/deploy
+
+            # Restart PM2 with the new code
             pm2 restart book-library || pm2 start ~/deploy/standalone/server.js --name book-library
             pm2 save
-      
+
       - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
         run: |
           echo "Waiting for server to be ready..."
