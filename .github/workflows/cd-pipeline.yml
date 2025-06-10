@@ -35,6 +35,7 @@ jobs:
         id: tf_output
         run: |
           terraform -chdir=./terraform output -json > tf_output.json
+          echo "api_gateway_url=$(jq -r '.api_gateway_url.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "cd_access_key_id=$(jq -r '.cd_access_key_id.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "cd_secret_access_key=$(jq -r '.cd_secret_access_key.value' tf_output.json)" >> "$GITHUB_OUTPUT"
@@ -98,6 +99,18 @@ jobs:
         run: |
           echo "Waiting for server to be ready..."
           sleep 15
+
+          # Simpan HTTP status code ke dalam variabel
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.tf_output.outputs.aws_api_url }}/health)
+
+          # Periksa apakah status code bukan 200
+          if [ "$STATUS_CODE" -ne 200 ]; then
+            echo "Health check failed with status code: $STATUS_CODE"
+            exit 1 # Keluar dengan error, step ini akan gagal
+          else
+            echo "Health check successful with status 200. Proceeding with tests."
+          fi
+
           npm ci
           npx playwright install --with-deps
           npm run smoke
