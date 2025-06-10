@@ -498,7 +498,7 @@ resource "aws_instance" "staging" {
               #!/bin/bash -xe
               exec > /var/log/user-data.log 2>&1
 
-              apt update && apt install -y curl unzip npm
+              apt update && apt install -y curl unzip
 
               curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
               sudo apt install -y nodejs
@@ -528,7 +528,7 @@ resource "aws_instance" "production" {
               #!/bin/bash -xe
               exec > /var/log/user-data.log 2>&1
 
-              apt update && apt install -y curl unzip npm
+              apt update && apt install -y curl unzip
 
               curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
               sudo apt install -y nodejs
