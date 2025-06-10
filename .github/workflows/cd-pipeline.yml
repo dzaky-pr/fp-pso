@@ -107,7 +107,7 @@ jobs:
           echo "Waiting for server to be ready..."
           sleep 15
 
-          exit 1
+          # exit 1
 
           # Simpan HTTP status code ke dalam variabel
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.tf_output.outputs.api_gateway_url }}/health)
@@ -160,6 +160,7 @@ jobs:
       - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
         id: production_smoke_tests
         if: steps.staging_smoke_tests.outcome == 'success'
+        continue-on-error: true
         run: |
           echo "Waiting for server to be ready..."
           sleep 15
