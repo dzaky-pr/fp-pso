@@ -47,6 +47,7 @@ jobs:
 
       - name: ✅ Check Terraform Output
         run: |
+          echo "API Gateway URL: ${{ steps.tf_output.outputs.aws_api_url }}"
           echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
           echo "Production Public IP: ${{ steps.tf_output.outputs.production_public_ip }}"
 
