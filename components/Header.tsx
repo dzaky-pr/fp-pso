@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FiMoon, FiSun } from "react-icons/fi";
@@ -25,8 +26,15 @@ function Header() {
   };
 
   return (
-    <header className="flex justify-between items-center py-6 px-10 shadow-md dark:shadow-slate-800 transition-colors duration-300">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+    <header className="flex justify-between items-center py-3.5 px-10 shadow-md dark:shadow-slate-800 transition-colors duration-300">
+      <h1 className="flex items-center text-3xl font-bold text-gray-900 dark:text-white px-14">
+        <Image
+          src="/image/library.png"
+          width={50}
+          height={50}
+          alt="Book Library"
+          className="mr-3"
+        />
         <Link href="/">Book Library</Link>
       </h1>
       <nav className="flex items-center space-x-6">
