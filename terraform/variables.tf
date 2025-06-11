@@ -19,7 +19,7 @@ variable "api_bucket_name" {
 variable "ami_id" {
   description = "AMI ID for the EC2 instance"
   type        = string
-  default     = "ami-0c1907b6d738188e5" # AMI ID for Ubuntu 20.04 in ap-southeast-1 [cite: 30]
+  default     = "ami-0c1907b6d738188e5" # AMI ID for Ubuntu 20.04 in ap-southeast-1
 }
 
 variable "instance_type" {

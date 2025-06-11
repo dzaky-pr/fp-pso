@@ -1,7 +1,0 @@
-aws_access_key = ""
-aws_secret_access_key = ""
-github_token = "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXX" # from step 1
-
-ami_id = "ami-0c1907b6d738188e5" # Example AMI ID for Ubuntu 22.04 in ap-southeast-1
-key_pair_name = "key-pair" # Example key pair name
-vpc_id = "vpc-0000000000000000" # Example VPC ID

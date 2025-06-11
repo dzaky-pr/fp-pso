@@ -331,9 +331,9 @@ resource "aws_sns_topic_subscription" "email_alerts" {
   protocol  = "email"
   endpoint  = each.value
 
-  lifecycle {
-    prevent_destroy = true
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
 
 resource "aws_sns_topic" "lambda_errors" {

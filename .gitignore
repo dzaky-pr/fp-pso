@@ -42,8 +42,7 @@ terraform.tfstate
 .terraform.lock.hcl
 terraform.tfstate.backup
 crash.log
-*.tfvars
-# *.tfvars.example # Uncomment jika Anda tidak ingin menyimpan file contoh
+terraform.tfvars
 
 # Lambda
 lambda_package.zip

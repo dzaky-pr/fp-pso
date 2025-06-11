@@ -89,7 +89,7 @@ jobs:
             # Download the ZIP artifact from S3
             aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
 
-            # Unzip it to the deploy folder 
+            # Unzip it to the deploy folder
             unzip ~/artifact.zip -d ~/deploy
 
             cd deploy/artifact/standalone
