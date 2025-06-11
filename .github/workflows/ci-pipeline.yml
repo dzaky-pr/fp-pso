@@ -115,6 +115,35 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
+      - name: 🧹 Clean Up Old Artifacts in S3
+        run: |
+          # Download latest.txt and previous.txt (if exists)
+          aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt latest.txt || true
+          aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/previous.txt previous.txt || true
+
+          # Extract version names
+          LATEST=$(cat latest.txt 2>/dev/null || echo "")
+          PREVIOUS=$(cat previous.txt 2>/dev/null || echo "")
+
+          echo "Keeping: $LATEST and $PREVIOUS"
+
+          # List all zip files in the bucket
+          aws s3 ls s3://${{ steps.tf_output.outputs.artifact_bucket }}/ | awk '{print $4}' | grep '\.zip$' > all_zips.txt
+
+          # Delete zip files that are not latest or previous
+          while read ZIPFILE; do
+            if [[ "$ZIPFILE" != "$LATEST" && "$ZIPFILE" != "$PREVIOUS" ]]; then
+              echo "🗑 Deleting $ZIPFILE"
+              aws s3 rm s3://${{ steps.tf_output.outputs.artifact_bucket }}/$ZIPFILE
+            else
+              echo "✅ Keeping $ZIPFILE"
+            fi
+          done < all_zips.txt
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+
       - name: 🧹 Clean artifacts and zip
         run: |
           rm -rf artifact artifact.zip
