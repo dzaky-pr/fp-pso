@@ -54,9 +54,19 @@ output "staging_public_ip" {
   value = aws_instance.staging.public_ip
 }
 
+output "staging_public_dns" {
+  description = "Public DNS address of the staging EC2 instance"
+  value = aws_instance.staging.public_dns
+}
+
 output "production_public_ip" {
   description = "Public IP address of the production EC2 instance"
   value = aws_instance.production.public_ip
+}
+
+output "production_public_dns" {
+  description = "Public DNS address of the production EC2 instance"
+  value = aws_instance.production.public_dns
 }
 
 output "ci_trigger_status" {

@@ -43,10 +43,9 @@ jobs:
           echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "cd_access_key_id=$(jq -r '.cd_access_key_id.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "cd_secret_access_key=$(jq -r '.cd_secret_access_key.value' tf_output.json)" >> "$GITHUB_OUTPUT"
-          echo "ci_access_key_id=$(jq -r '.ci_access_key_id.value' tf_output.json)" >> $GITHUB_OUTPUT
-          echo "ci_secret_access_key=$(jq -r '.ci_secret_access_key.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "production_public_ip=$(jq -r '.production_public_ip.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "staging_public_ip=$(jq -r '.staging_public_ip.value' tf_output.json)" >> "$GITHUB_OUTPUT"
+          echo "production_public_dns=$(jq -r '.production_public_dns.value' tf_output.json)" >> "$GITHUB_OUTPUT"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -186,6 +185,13 @@ jobs:
         env:
           SMOKE_UI_URL: http://${{ steps.tf_output.outputs.production_public_ip }}:3000
 
+      - name: 🧾 Add deployment info to summary
+        if: steps.production_smoke_tests.outcome == 'success'
+        run: |
+          echo "### ✅ Deployed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "**Latest commit:** \`${{ github.sha::0:7 }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Preview URL:** [${{ steps.tf_output.outputs.production_public_dns }}](${{ steps.tf_output.outputs.production_public_dns }})" >> $GITHUB_STEP_SUMMARY
+
       - name: 📄 Rollback to Previous Success Version
         if: steps.staging_smoke_tests.outcome == 'failure'
         run: |
@@ -204,8 +210,8 @@ jobs:
 
           echo "✅ Rolled back: latest.txt now points to $VERSION"
         env:
-          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
-          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.cd_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.cd_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: 🖥 Stop Deployment in Staging EC2
