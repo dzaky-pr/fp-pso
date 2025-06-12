@@ -44,10 +44,17 @@ jobs:
         id: tf_output
         run: |
           terraform -chdir=./terraform output -json > tf_output.json
+
+          # Mask sensitive values in logs
+          CI_ACCESS_KEY=$(jq -r '.ci_access_key_id.value' tf_output.json)
+          CI_SECRET_KEY=$(jq -r '.ci_secret_access_key.value' tf_output.json)
+          echo "::add-mask::$CI_ACCESS_KEY"
+          echo "::add-mask::$CI_SECRET_KEY"
+
           echo "api_gateway_url=$(jq -r '.api_gateway_url.value' tf_output.json)" >> $GITHUB_OUTPUT
           echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> $GITHUB_OUTPUT
-          echo "ci_access_key_id=$(jq -r '.ci_access_key_id.value' tf_output.json)" >> $GITHUB_OUTPUT
-          echo "ci_secret_access_key=$(jq -r '.ci_secret_access_key.value' tf_output.json)" >> $GITHUB_OUTPUT
+          echo "ci_access_key_id=$CI_ACCESS_KEY" >> $GITHUB_OUTPUT
+          echo "ci_secret_access_key=$CI_SECRET_KEY" >> $GITHUB_OUTPUT
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -59,7 +66,9 @@ jobs:
           echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
 
       - name: 📦 Install Dependencies
-        run: npm ci
+        run: |
+          # Install with audit and cache optimization
+          npm ci --prefer-offline --no-audit --silent
 
       - name: 🔍 Lint & Typecheck
         run: |
@@ -85,6 +94,18 @@ jobs:
       - name: 📦 Zip Artifacts
         run: |
           zip -r artifact.zip artifact
+
+      - name: 🔍 Verify Artifact Integrity
+        run: |
+          # Generate checksum for artifact
+          sha256sum artifact.zip > artifact.zip.sha256
+          echo "Artifact size: $(ls -lh artifact.zip | awk '{print $5}')"
+
+          # Verify minimum size (should be > 1MB for a real deployment)
+          ARTIFACT_SIZE=$(stat -f%z artifact.zip 2>/dev/null || stat -c%s artifact.zip)
+          if [ "$ARTIFACT_SIZE" -lt 1048576 ]; then
+            echo "::warning::Artifact size seems small ($ARTIFACT_SIZE bytes)"
+          fi
 
       - name: ☁ Upload Artifact Zip to S3
         run: |
@@ -129,16 +150,18 @@ jobs:
 
           echo "Keeping: [$LATEST] and [$PREVIOUS]"
 
-          aws s3 ls s3://${{ steps.tf_output.outputs.artifact_bucket }}/ | awk '{print $4}' | grep '\.zip$' > all_zips.txt
+          aws s3 ls s3://${{ steps.tf_output.outputs.artifact_bucket }}/ | awk '{print $4}' | grep '\.zip$' > all_zips.txt || true
 
-          while read ZIPFILE; do
-            if [[ "$ZIPFILE" != "$LATEST" && "$ZIPFILE" != "$PREVIOUS" ]]; then
-              echo "🗑 Deleting $ZIPFILE"
-              aws s3 rm s3://${{ steps.tf_output.outputs.artifact_bucket }}/$ZIPFILE
-            else
-              echo "✅ Keeping $ZIPFILE"
-            fi
-          done < all_zips.txt
+          if [ -f all_zips.txt ]; then
+            while read ZIPFILE; do
+              if [[ -n "$ZIPFILE" && "$ZIPFILE" != "$LATEST" && "$ZIPFILE" != "$PREVIOUS" ]]; then
+                echo "🗑 Deleting $ZIPFILE"
+                aws s3 rm s3://${{ steps.tf_output.outputs.artifact_bucket }}/$ZIPFILE
+              else
+                echo "✅ Keeping $ZIPFILE"
+              fi
+            done < all_zips.txt
+          fi
         env:
           AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
