@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 18
           cache: "npm"
-          
+
       - name: 💾 Cache Next.js Build
         uses: actions/cache@v4
         with:
@@ -82,8 +82,8 @@ jobs:
 
       - name: 🔍 Security Audit
         run: |
-          npm audit --audit-level high --production
-          
+          npm audit --audit-level=high --omit=dev
+
       - name: 🔍 Lint & Typecheck
         run: |
           npm run lint
@@ -92,7 +92,7 @@ jobs:
       - name: 🧪 Run Unit Tests
         run: |
           npm test -- --verbose --coverage --maxWorkers=4
-          
+
       - name: 📊 Upload Coverage Reports
         uses: codecov/codecov-action@v4
         if: always()
@@ -112,7 +112,7 @@ jobs:
           mkdir -p artifact
           cp -r .next/static .next/standalone/.next
           cp -r .next/standalone artifact/
-          
+
           # Remove development files to reduce artifact size
           find artifact -name "*.map" -delete
           find artifact -name "node_modules" -type d -exec rm -rf {} + 2>/dev/null || true
