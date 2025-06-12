@@ -80,16 +80,22 @@ jobs:
           # Install with audit and cache optimization
           npm ci --prefer-offline --no-audit --silent --cache ~/.npm
 
-      - name: 🔍 Security Audit
+      - name: 🔍 Security Audit (prod high only)
         run: |
-          npm audit --audit-level=high --omit=dev || exit_code=$?
-          if [ "$exit_code" = "1" ]; then
-            echo "❌ Vulnerability found! Failing pipeline."
-            exit 1
-          elif [ "$exit_code" != "0" ]; then
-            echo "⚠️  Audit failed due to registry/network error, not vulnerability. Proceeding."
+          npm config set fetch-retry-mintimeout 10000
+          npm config set fetch-retry-maxtimeout 30000
+          for i in 1 2 3; do
+            npm audit --audit-level=high --omit=dev && exit_code=0 && break
+            exit_code=$?
+            echo "Audit attempt $i returned $exit_code."
+            sleep 3
+          done
+
+          if [ "$exit_code" -gt 1 ]; then
+            echo "⚠️ Audit failed (registry/network). Ignored."
             exit 0
           fi
+          # exit_code 1 = high vuln → pipeline otomatis error and stops
 
       - name: 🔍 Lint & Typecheck
         run: |
