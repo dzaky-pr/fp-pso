@@ -160,6 +160,8 @@ jobs:
             cd deploy/artifact/standalone
             chmod +rwx server.js
 
+            wait 5
+
             # Restart PM2 with the new code
             pm2 restart book-library --update-env || pm2 start server.js --name book-library
             pm2 save
