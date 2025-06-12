@@ -27,6 +27,16 @@ jobs:
         with:
           node-version: 18
           cache: "npm"
+          
+      - name: 💾 Cache Next.js Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
       - name: ⛅ Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -68,15 +78,27 @@ jobs:
       - name: 📦 Install Dependencies
         run: |
           # Install with audit and cache optimization
-          npm ci --prefer-offline --no-audit --silent
+          npm ci --prefer-offline --no-audit --silent --cache ~/.npm
 
+      - name: 🔍 Security Audit
+        run: |
+          npm audit --audit-level high --production
+          
       - name: 🔍 Lint & Typecheck
         run: |
           npm run lint
           npm run typecheck
 
       - name: 🧪 Run Unit Tests
-        run: npm test -- --verbose
+        run: |
+          npm test -- --verbose --coverage --maxWorkers=4
+          
+      - name: 📊 Upload Coverage Reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
 
       - name: 🏗 Setup .env
         run: |
@@ -90,10 +112,14 @@ jobs:
           mkdir -p artifact
           cp -r .next/static .next/standalone/.next
           cp -r .next/standalone artifact/
+          
+          # Remove development files to reduce artifact size
+          find artifact -name "*.map" -delete
+          find artifact -name "node_modules" -type d -exec rm -rf {} + 2>/dev/null || true
 
       - name: 📦 Zip Artifacts
         run: |
-          zip -r artifact.zip artifact
+          cd artifact && zip -r ../artifact.zip . -x "*.log" "*.tmp" "node_modules/*"
 
       - name: 🔍 Verify Artifact Integrity
         run: |
