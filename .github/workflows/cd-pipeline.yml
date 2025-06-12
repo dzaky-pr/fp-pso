@@ -146,7 +146,9 @@ jobs:
 
             # Clean and prepare deploy folder
             sudo chown -R ubuntu:ubuntu ~/deploy
+            sudo chown -R ubuntu:ubuntu ~/artifact.zip
             rm -rf ~/deploy
+            rm -rf artifact.zip
             mkdir -p ~/deploy
 
             # Download the ZIP artifact from S3
@@ -157,10 +159,9 @@ jobs:
 
             cd deploy/artifact/standalone
             chmod +rwx server.js
-            chmod +rwx package.json
 
             # Restart PM2 with the new code
-            pm2 restart book-library || pm2 start server.js --name book-library
+            pm2 restart book-library --update-env || pm2 start server.js --name book-library
             pm2 save
 
       - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
