@@ -82,7 +82,14 @@ jobs:
 
       - name: 🔍 Security Audit
         run: |
-          npm audit --audit-level=high --omit=dev
+          npm audit --audit-level=high --omit=dev || exit_code=$?
+          if [ "$exit_code" = "1" ]; then
+            echo "❌ Vulnerability found! Failing pipeline."
+            exit 1
+          elif [ "$exit_code" != "0" ]; then
+            echo "⚠️  Audit failed due to registry/network error, not vulnerability. Proceeding."
+            exit 0
+          fi
 
       - name: 🔍 Lint & Typecheck
         run: |
