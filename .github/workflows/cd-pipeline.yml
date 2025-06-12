@@ -5,7 +5,7 @@ on:
   workflow_run:
     workflows: ["🛠 CI Pipeline"]
     types:
-      - success
+      - completed
 
 concurrency:
   group: cd-${{ github.ref }}
