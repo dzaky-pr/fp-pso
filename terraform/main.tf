@@ -544,41 +544,6 @@ resource "aws_instance" "production" {
 
               # Install PM2 globally
               npm install -g pm2
-
-              cd /home/ubuntu
-
-              # Retry logic for latest.txt
-              for i in {1..10}; do
-                if aws s3 cp s3://${aws_s3_bucket.artifact.bucket}/latest.txt ./latest.txt; then
-                  echo "✅ Found latest.txt"
-                  break
-                fi
-                echo "⏳ Waiting for artifact... ($i/10)"
-                sleep 15
-              done
-
-              if [ ! -f "./latest.txt" ]; then
-                echo "❌ Failed to fetch latest.txt after 10 tries. Exiting."
-                exit 1
-              fi
-
-              VERSION=$(cat latest.txt)
-
-              mkdir -p deploy
-
-              # Download the ZIP artifact from S3
-              aws s3 cp s3://${aws_s3_bucket.artifact.bucket}/$VERSION artifact.zip
-
-              # Unzip it to the deploy folder
-              unzip artifact.zip -d deploy
-
-              cd deploy/artifact/standalone
-              chmod +rwx server.js
-              chmod +rwx package.json
-
-              # Start using PM2
-              pm2 start server.js --name book-library
-              pm2 save
               EOF
 
   depends_on = [
