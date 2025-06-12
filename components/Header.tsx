@@ -35,7 +35,7 @@ function Header() {
           alt="Book Library"
           className="mr-3"
         />
-        <Link href="/">Book Library</Link>
+        <Link href="/">MAS FADHINO TEGAR</Link>
       </h1>
       <nav className="flex items-center space-x-6">
         <Link
