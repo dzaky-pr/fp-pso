@@ -15,7 +15,7 @@
     "check:write": "biome check --write .",
     "validate": "pnpm check && pnpm typecheck",
     "lint-format-check:write": "biome lint --write . && biome format --write . && biome check --write .",
-    "prepare": "husky install",
+    "prepare": "husky",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:local": "NODE_ENV=test jest --setupFilesAfterEnv=<rootDir>/jest.setup.js",
