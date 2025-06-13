@@ -5,14 +5,15 @@ on:
   workflow_run:
     workflows: "🛠 CI Pipeline"
     types:
-      - success
-
+      - completed
+      
 concurrency:
   group: cd-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     name: 🚀 Deploy to EC2
     runs-on: ubuntu-latest
 
