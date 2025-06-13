@@ -104,7 +104,12 @@ jobs:
             pm2 restart book-library || pm2 start server.js --name book-library
             pm2 save
 
-      - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
+      - name: 🔗 Print Staging URL
+        run: |
+          echo "Staging URL: http://${{ steps.tf_output.outputs.staging_public_ip }}:3000"
+          echo "### 🚦 Staging URL: [http://${{ steps.tf_output.outputs.staging_public_ip }}:3000](http://${{ steps.tf_output.outputs.staging_public_ip }}:3000)" >> $GITHUB_STEP_SUMMARY
+          
+      - name: 🧪 Run Playwright Staging Smoke Tests (UI, Dark Mode, Search)
         id: staging_smoke_tests
         continue-on-error: true
         run: |
@@ -129,7 +134,13 @@ jobs:
           npm run smoke
         env:
           SMOKE_UI_URL: http://${{ steps.tf_output.outputs.staging_public_ip }}:3000
-
+      
+      - name: 🕐 Wait for 1 minute before production deployment
+        if: steps.staging_smoke_tests.outcome == 'success'
+        run: |
+          echo "Waiting for 1 minute before deploying to production..."
+          sleep 60
+  
       - name: 🖥 Deploy to EC2 via SSH Script
         if: steps.staging_smoke_tests.outcome == 'success'
         uses: appleboy/ssh-action@v1.0.3
@@ -167,7 +178,7 @@ jobs:
             pm2 restart book-library --update-env || pm2 start server.js --name book-library
             pm2 save
 
-      - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
+      - name: 🧪 Run Playwright Production Smoke Tests (UI, Dark Mode, Search)
         id: production_smoke_tests
         if: steps.staging_smoke_tests.outcome == 'success'
         continue-on-error: true
