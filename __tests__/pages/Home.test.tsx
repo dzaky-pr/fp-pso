@@ -47,7 +47,7 @@ describe("Home Page", () => {
     render(await Home());
 
     expect(screen.getByTestId("header")).toBeTruthy();
-    expect(screen.getByText("Explore Our Collections")).toBeTruthy();
+    expect(screen.getByText("Explore Our Collections Bro!")).toBeTruthy();
     expect(screen.getByTestId("book-list")).toBeTruthy();
   });
 
