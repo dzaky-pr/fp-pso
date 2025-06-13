@@ -7,12 +7,42 @@ configure({
   asyncUtilTimeout: 5000,
 });
 
+// --- TAMBAHKAN MOCK GLOBAL UNTUK NEXT/NAVIGATION ---
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    refresh: jest.fn(),
+    back: jest.fn(),
+    prefetch: jest.fn(),
+    // Tambahkan metode router lain jika komponen Anda menggunakannya
+  })),
+  usePathname: jest.fn(() => "/mock-path"), // Mock usePathname jika ada yang menggunakannya
+  useSearchParams: jest.fn(() => new URLSearchParams()), // Mock useSearchParams
+}));
+
+// Mock window.matchMedia for theme toggling in Header.tsx
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: jest.fn().mockImplementation((query) => ({
+    matches: false, // Default ke light mode untuk tes kecuali di-mock secara eksplisit
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // Deprecated
+    removeListener: jest.fn(), // Deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+// --- AKHIR MOCK GLOBAL ---
+
 // Suppress JSDOM navigation errors and React warnings globally
 const originalError = console.error;
 console.error = (...args) => {
   const firstArg = args[0];
 
-  // Handle string errors/warnings
+  // Tangani error/peringatan string
   if (typeof firstArg === "string") {
     const message = firstArg;
     if (
@@ -20,46 +50,60 @@ console.error = (...args) => {
       message.includes("Warning: An update to") ||
       message.includes(
         "Warning: The current testing environment is not configured to support act",
-      )
+      ) ||
+      message.includes("invariant expected app router to be mounted") // Supress error ini
     ) {
-      return; // Suppress these specific errors/warnings
+      return; // Supress error/peringatan spesifik ini
     }
   }
 
-  // Handle Error objects from JSDOM
+  // Tangani objek Error dari JSDOM
   if (firstArg instanceof Error) {
     const errorMessage = firstArg.message || "";
     const errorType = firstArg.type || "";
     if (
       errorMessage.includes("Not implemented: navigation") ||
       errorType === "not implemented" ||
-      errorMessage.includes("navigation (except hash changes)")
+      errorMessage.includes("navigation (except hash changes)") ||
+      errorMessage.includes("invariant expected app router to be mounted") // Supress error ini
     ) {
-      return; // Suppress JSDOM navigation errors
+      return; // Supress error navigasi JSDOM
     }
   }
 
-  // Also check if any of the arguments contain JSDOM navigation errors
+  // Juga periksa apakah ada argumen yang berisi error navigasi JSDOM
   const argsString = args.join(" ");
   if (
     argsString.includes("Not implemented: navigation") ||
     argsString.includes("navigateFetch") ||
-    argsString.includes("HTMLHyperlinkElementUtils")
+    argsString.includes("HTMLHyperlinkElementUtils") ||
+    argsString.includes("invariant expected app router to be mounted") // Supress error ini
   ) {
-    return; // Suppress JSDOM navigation related errors
+    return; // Supress error terkait navigasi JSDOM
   }
 
   originalError.call(console, ...args);
 };
 
-// Suppress console.warn for tests unless explicitly needed
+// Supress console.warn untuk tes kecuali secara eksplisit diperlukan
 global.beforeEach(() => {
   // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
   // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
   jest.spyOn(console, "warn").mockImplementation(() => {});
+  // Mock localStorage untuk tes
+  Object.defineProperty(window, "localStorage", {
+    value: {
+      getItem: jest.fn(() => null), // Default: tidak terautentikasi
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+      clear: jest.fn(),
+      length: 0,
+      key: jest.fn(),
+    },
+    writable: true,
+  });
 });
 
 global.afterEach(() => {
-  // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
   jest.restoreAllMocks();
 });

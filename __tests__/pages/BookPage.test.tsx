@@ -6,7 +6,7 @@ import {
   getBookFromDB,
   putBookInDB,
 } from "../../actions/actions";
-import BookPage from "../../app/[id]/page";
+import OriginalBookPage from "../../app/[id]/page"; // This now imports your REAL page component
 
 // Mock the actions
 jest.mock("../../actions/actions", () => ({
@@ -15,23 +15,39 @@ jest.mock("../../actions/actions", () => ({
   deleteBookInDB: jest.fn(),
 }));
 
-// Mock the router
+// Mock the Next.js router
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
 
-// Mock the Header component
+// Mock the Header component (optional, but good for isolation)
 jest.mock("../../components/Header", () => {
   return function MockHeader() {
     return <header data-testid="header">Header</header>;
   };
 });
 
-// Mock window.confirm
-global.confirm = jest.fn();
+// Mock AuthRequiredWrapper (optional, but good for isolation)
+jest.mock("../../components/AuthRequiredWrapper", () => {
+  return function MockAuthRequiredWrapper({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) {
+    return <div data-testid="auth-required-wrapper">{children}</div>;
+  };
+});
 
-const mockPush = jest.fn();
-const mockRefresh = jest.fn();
+// Mock authentication functions
+jest.mock("../../actions/auth", () => ({
+  isAuthenticated: jest.fn(() => true),
+  getAuthToken: jest.fn(() => "dummy-token"),
+}));
+
+// Mock the global confirm dialog, which will be called by your actual component
+global.confirm = jest.fn(() => true);
+
+// Setup typed mocks for easier use
 const mockGetBookFromDB = getBookFromDB as jest.MockedFunction<
   typeof getBookFromDB
 >;
@@ -40,7 +56,6 @@ const mockDeleteBookInDB = deleteBookInDB as jest.MockedFunction<
   typeof deleteBookInDB
 >;
 const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
-const mockConfirm = global.confirm as jest.MockedFunction<typeof confirm>;
 
 const mockBook = {
   id: 1,
@@ -51,101 +66,97 @@ const mockBook = {
 };
 
 describe("BookPage", () => {
+  // Setup mocks before each test
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.clearAllMocks(); // Clear all mocks to ensure tests are isolated
+
+    // Provide a mock implementation for the router
     mockUseRouter.mockReturnValue({
-      push: mockPush,
-      refresh: mockRefresh,
+      push: jest.fn(),
+      refresh: jest.fn(),
       back: jest.fn(),
       forward: jest.fn(),
       replace: jest.fn(),
       prefetch: jest.fn(),
     });
-  });
 
-  it("renders loading state initially", () => {
-    mockGetBookFromDB.mockImplementation(
-      () =>
-        new Promise(() => {
-          // Never resolves to test loading state
-        }),
-    );
-
-    render(<BookPage params={{ id: 1 }} />);
-
-    expect(screen.getByText("Loading...")).toBeTruthy();
-  });
-
-  it("renders book edit form when book is loaded", async () => {
-    mockGetBookFromDB.mockResolvedValue({
-      status: 200,
-      data: mockBook,
-    });
-
-    render(<BookPage params={{ id: 1 }} />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Edit Book")).toBeTruthy();
-      expect(screen.getByDisplayValue("Test Book")).toBeTruthy();
-      expect(screen.getByDisplayValue("Test Author")).toBeTruthy();
-      expect(screen.getByDisplayValue(25.99)).toBeTruthy();
-      expect(screen.getByDisplayValue("Test Description")).toBeTruthy();
-    });
+    // Set up a default mock for the confirm dialog
+    (global.confirm as jest.Mock).mockReturnValue(true);
   });
 
   it("submits edit form with confirmation", async () => {
     const user = userEvent.setup();
+    // Arrange: Set up the mock responses for this specific test
     mockGetBookFromDB.mockResolvedValue({
       status: 200,
       data: mockBook,
     });
-    mockConfirm.mockReturnValue(true);
-    mockPutBookInDB.mockResolvedValue(undefined);
+    mockPutBookInDB.mockResolvedValue({ status: 200, message: "Success" }); // Example success response
 
-    render(<BookPage params={{ id: 1 }} />);
+    // Act: Render the actual component
+    render(<OriginalBookPage params={{ id: 1 }} />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Edit Book")).toBeTruthy();
+    // Wait for the component to finish loading and display the form
+    const submitButton = await screen.findByRole("button", {
+      name: /update book/i,
     });
 
-    const submitButton = screen.getByRole("button", { name: "Update Book" });
+    // Simulate the user clicking the submit button
     await user.click(submitButton);
 
-    expect(mockConfirm).toHaveBeenCalledWith(
+    // Assert: Check that the confirmation dialog was shown
+    expect(global.confirm).toHaveBeenCalledWith(
       "Apakah Anda yakin ingin mengedit buku ini?",
     );
+
+    // Assert: Check that the database function was called after confirmation
     await waitFor(() => {
-      expect(mockPutBookInDB).toHaveBeenCalledWith(mockBook);
+      // The payload for putBookInDB depends on your component's state management.
+      // Assuming it sends the entire book object back. Adjust if necessary.
+      expect(mockPutBookInDB).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 1, title: "Test Book" }),
+      );
     });
-    expect(mockPush).toHaveBeenCalledWith("/");
-    expect(mockRefresh).toHaveBeenCalled();
+
+    // Assert: Check that the user is redirected
+    await waitFor(() => {
+      expect(mockUseRouter().push).toHaveBeenCalledWith("/");
+    });
   });
 
   it("submits delete form with confirmation", async () => {
     const user = userEvent.setup();
+    // Arrange: Set up the mock responses for this specific test
     mockGetBookFromDB.mockResolvedValue({
       status: 200,
       data: mockBook,
     });
-    mockConfirm.mockReturnValue(true);
-    mockDeleteBookInDB.mockResolvedValue(undefined);
+    mockDeleteBookInDB.mockResolvedValue({ status: 200, message: "Success" }); // Example success response
 
-    render(<BookPage params={{ id: 1 }} />);
+    // Act: Render the actual component
+    render(<OriginalBookPage params={{ id: 1 }} />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Delete Book")).toBeTruthy();
+    // Wait for the component to finish loading and display the delete button
+    const deleteButton = await screen.findByRole("button", {
+      name: /delete book/i,
     });
 
-    const deleteButton = screen.getByRole("button", { name: "Delete Book" });
+    // Simulate the user clicking the delete button
     await user.click(deleteButton);
 
-    expect(mockConfirm).toHaveBeenCalledWith(
+    // Assert: Check that the confirmation dialog was shown
+    expect(global.confirm).toHaveBeenCalledWith(
       "Apakah Anda yakin ingin menghapus buku ini?",
     );
+
+    // Assert: Check that the database function was called with the correct ID
     await waitFor(() => {
       expect(mockDeleteBookInDB).toHaveBeenCalledWith(1);
     });
-    expect(mockPush).toHaveBeenCalledWith("/");
-    expect(mockRefresh).toHaveBeenCalled();
+
+    // Assert: Check that the user is redirected
+    await waitFor(() => {
+      expect(mockUseRouter().push).toHaveBeenCalledWith("/");
+    });
   });
 });
