@@ -1,4 +1,4 @@
-name: 🛠 CI Pipeline
+name: "🛠 CI Pipeline"
 
 on:
   workflow_dispatch:
@@ -78,7 +78,7 @@ jobs:
       - name: 📦 Install Dependencies With Audit
         run: |
           # Install with audit and cache optimization
-          npm ci --prefer-offline --silent --cache ~/.npm
+          npm ci --prefer-offline  --cache ~/.npm
 
       - name: 🔍 Lint & Typecheck
         run: |
@@ -87,14 +87,7 @@ jobs:
 
       - name: 🧪 Run Unit Tests
         run: |
-          npm test -- --verbose --coverage --maxWorkers=4
-
-      - name: 📊 Upload Coverage Reports
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          files: ./coverage/lcov.info
-          fail_ci_if_error: false
+          npm test -- --verbose
 
       - name: 🏗 Setup .env
         run: |
@@ -108,10 +101,6 @@ jobs:
           mkdir -p artifact
           cp -r .next/static .next/standalone/.next
           cp -r .next/standalone artifact/
-
-          # Remove development files to reduce artifact size
-          find artifact -name "*.map" -delete
-          find artifact -name "node_modules" -type d -exec rm -rf {} + 2>/dev/null || true
 
       - name: 📦 Zip Artifacts
         run: |
