@@ -3,7 +3,7 @@ name: 🚀 CD Pipeline
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["🛠 CI Pipeline"]
+    workflows: "🛠 CI Pipeline"
     types:
       - success
 
