@@ -76,6 +76,38 @@ resource "aws_dynamodb_table" "books_table" {
     Project     = "BookLibrary"
   }
 }
+
+# --- DynamoDB Table for Users ---
+resource "aws_dynamodb_table" "users_table" {
+  name             = "users"
+  billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "userId" 
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "email"
+    type = "S" # Tipe data string untuk email
+  }
+
+  global_secondary_index {
+    name               = "EmailIndex" 
+    hash_key           = "email"   
+    projection_type    = "ALL"
+
+    read_capacity      = 1
+    write_capacity     = 1
+  }
+
+  tags = {
+    Name        = "users-table-book-library"
+    Environment = "Dev" # Sesuaikan dengan tag lingkungan Anda
+    Project     = "BookLibrary"
+  }
+}
 # ----------------
 
 # --- IAM User ---

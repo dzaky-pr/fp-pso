@@ -5,3 +5,21 @@ export interface IBook {
   price: number;
   description: string;
 }
+
+export interface IUser {
+  userId: string;
+  email: string;
+  passwordHash: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ILoginData {
+  email: string;
+  password: string;
+}
+
+export interface IRegisterData {
+  email: string;
+  password: string;
+}

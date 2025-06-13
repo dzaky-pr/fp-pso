@@ -17,7 +17,10 @@ const convertToAPIGatewayEvent = (req) => {
   const { method, path, body, headers, query } = req;
 
   // Convert Express route to API Gateway route key format
-  let routeKey;
+  let routeKey; //
+  const pathParameters = {}; //
+  const idMatch = path.match(/\/(\d+)$/); //
+
   if (method === "GET" && path === "/api/books") {
     routeKey = "GET /books";
   } else if (method === "GET" && path.match(/^\/api\/books\/\d+$/)) {
@@ -26,11 +29,13 @@ const convertToAPIGatewayEvent = (req) => {
     routeKey = "PUT /books";
   } else if (method === "DELETE" && path.match(/^\/api\/books\/\d+$/)) {
     routeKey = "DELETE /books/{id}";
+  } else if (method === "POST" && path === "/api/register") {
+    routeKey = "POST /register";
+  } else if (method === "POST" && path === "/api/login") {
+    routeKey = "POST /login";
   }
 
   // Extract path parameters
-  const pathParameters = {};
-  const idMatch = path.match(/\/(\d+)$/);
   if (idMatch) {
     pathParameters.id = idMatch[1];
   }
@@ -45,7 +50,7 @@ const convertToAPIGatewayEvent = (req) => {
 };
 
 // Routes
-app.all("/api/books*", async (req, res) => {
+app.all("/api/*", async (req, res) => {
   try {
     // Convert Express request to API Gateway event
     const event = convertToAPIGatewayEvent(req);
@@ -95,6 +100,10 @@ app.listen(PORT, () => {
   console.log(`   PUT    http://localhost:${PORT}/api/books`);
   // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   DELETE http://localhost:${PORT}/api/books/{id}`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`   POST   http://localhost:${PORT}/api/register`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`   POST   http://localhost:${PORT}/api/login`);
   // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
   // biome-ignore lint/suspicious/noConsoleLog: <explanation>
