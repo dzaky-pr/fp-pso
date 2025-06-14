@@ -53,3 +53,6 @@ lambda_package.zip
 # Dynamo DB Local
 /local-dynamodb/*
 /docker/*
+
+# Playwright
+/test-results

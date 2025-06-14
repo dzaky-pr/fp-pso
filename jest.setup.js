@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("@testing-library/jest-dom");
 
 // Configure React Testing Library to suppress act warnings

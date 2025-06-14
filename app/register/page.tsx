@@ -31,7 +31,7 @@ function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 dark:bg-zinc-900 text-text-color dark:text-white transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-zinc-900 dark:to-zinc-800 transition-colors duration-300">
       <Header />
       <form
         onSubmit={handleSubmit}
