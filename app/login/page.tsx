@@ -93,7 +93,7 @@ function LoginPage() {
         </button>
 
         <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          Don't have an account?{" "}
+          Don&apost have an account?{" "}
           <Link href="/register" className="text-blue-600 hover:underline">
             Register here
           </Link>
