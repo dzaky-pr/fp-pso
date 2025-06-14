@@ -83,6 +83,43 @@ aws dynamodb put-item \
 
 echo "✅ Sample data added!"
 
+echo "📊 Creating 'users' table..."
+aws dynamodb create-table \
+    --table-name users \
+    --attribute-definitions \
+        AttributeName=userId,AttributeType=S \
+        AttributeName=email,AttributeType=S \
+    --key-schema \
+        AttributeName=userId,KeyType=HASH \
+    --billing-mode PAY_PER_REQUEST \
+    --global-secondary-indexes "$(cat <<EOF
+[
+    {
+        "IndexName": "EmailIndex",
+        "KeySchema": [
+            { "AttributeName": "email", "KeyType": "HASH" }
+        ],
+        "Projection": {
+            "ProjectionType": "ALL"
+        },
+        "ProvisionedThroughput": {
+            "ReadCapacityUnits": 1,
+            "WriteCapacityUnits": 1
+        }
+    }
+]
+EOF
+)" \
+    --endpoint-url http://localhost:8000 \
+    --region ap-southeast-1 \
+    --no-cli-pager
+
+if [ $? -eq 0 ]; then
+    echo "✅ Table 'users' created successfully!"
+else
+    echo "⚠️  Table 'users' might already exist or there was an error"
+fi
+
 # Start DynamoDB Admin UI
 echo "🎨 Starting DynamoDB Admin UI..."
 docker-compose up -d dynamodb-admin

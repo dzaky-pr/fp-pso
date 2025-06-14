@@ -1,5 +1,5 @@
 import { getBooks } from "@/actions/data";
-import BookList from "@/components/BookList";
+import AuthProtectedBookList from "@/components/AuthProtectedBookList";
 import Header from "@/components/Header";
 import type { IBook } from "@/types";
 
@@ -17,9 +17,7 @@ export default async function Home() {
             Explore Our Collections
           </h2>
         </div>
-
-        {/* Book list with search */}
-        <BookList books={books} />
+        <AuthProtectedBookList initialBooks={books} />
       </main>
     </div>
   );

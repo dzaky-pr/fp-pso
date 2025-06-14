@@ -9,7 +9,7 @@ jest.mock("../../actions/actions", () => ({
   putBookInDB: jest.fn(),
 }));
 
-// Mock the router
+// Mock the router (jika belum di-mock secara global oleh jest.setup.js)
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
@@ -20,6 +20,26 @@ jest.mock("../../components/Header", () => {
     return <header data-testid="header">Header</header>;
   };
 });
+
+// --- MOCK AuthRequiredWrapper ---
+// Kita akan memmock AuthRequiredWrapper agar selalu merender childrennya
+// dalam konteks tes ini, karena kita ingin menguji AddPage itu sendiri.
+jest.mock("../../components/AuthRequiredWrapper", () => {
+  return function MockAuthRequiredWrapper({
+    children,
+  }: { children: React.ReactNode }) {
+    return <div data-testid="auth-required-wrapper">{children}</div>;
+  };
+});
+
+// Mock isAuthenticated() dari actions/auth agar selalu true di test ini
+// Karena AuthRequiredWrapper mungkin bergantung padanya.
+jest.mock("../../actions/auth", () => ({
+  ...jest.requireActual("../../actions/auth"), // Pertahankan fungsi asli lainnya jika diperlukan
+  isAuthenticated: jest.fn(() => true), // Paksa isAuthenticated mengembalikan true untuk tes
+  getAuthToken: jest.fn(() => "dummy-token"), // Juga berikan token dummy
+}));
+// --- AKHIR MOCK ---
 
 const mockPush = jest.fn();
 const mockRefresh = jest.fn();
@@ -37,12 +57,22 @@ describe("AddPage", () => {
       replace: jest.fn(),
       prefetch: jest.fn(),
     });
+    // Mock localStorage to simulate authenticated state for tests if needed
+    // Ini sudah kita mock secara global di jest.setup.js, tapi bisa di-override di sini jika perlu.
+    // Untuk tes ini, karena mockIsAuthenticated sudah diset true, ini tidak terlalu krusial di sini.
+  });
+
+  afterEach(() => {
+    (window.localStorage.getItem as jest.Mock).mockRestore();
   });
 
   it("renders add book form", () => {
     render(<AddPage />);
 
     expect(screen.getByTestId("header")).toBeTruthy();
+    // Karena kita membungkus dengan AuthRequiredWrapper, kita harus mengecek wrapper dulu,
+    // lalu konten di dalamnya.
+    expect(screen.getByTestId("auth-required-wrapper")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Add Book" })).toBeTruthy();
     expect(screen.getByLabelText("Title")).toBeTruthy();
     expect(screen.getByLabelText("Author")).toBeTruthy();
@@ -90,6 +120,7 @@ describe("AddPage", () => {
     await waitFor(() => {
       expect(mockPutBookInDB).toHaveBeenCalledWith(
         expect.objectContaining({
+          id: expect.any(Number), // ID will be random
           title: "Test Book",
           author: "Test Author",
           price: 25.99,

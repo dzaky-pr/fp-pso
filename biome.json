@@ -112,7 +112,20 @@
       "quoteStyle": "double",
       "attributePosition": "auto"
     },
-    "globals": ["React", "JSX"]
+    "globals": [
+      "React",
+      "JSX",
+      "describe",
+      "it",
+      "test",
+      "expect",
+      "jest",
+      "beforeEach",
+      "afterEach",
+      "beforeAll",
+      "afterAll",
+      "global"
+    ]
   },
   "overrides": [
     {

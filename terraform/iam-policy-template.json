@@ -30,6 +30,15 @@
         "sns:*"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "UsersTableAccess",
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"],
+      "Resource": [
+        "arn:aws:dynamodb:ap-southeast-1:435245732014:table/users",
+        "arn:aws:dynamodb:ap-southeast-1:435245732014:table/users/index/EmailIndex"
+      ]
     }
   ]
 }

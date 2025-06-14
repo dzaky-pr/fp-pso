@@ -1,21 +1,23 @@
 "use client";
+import { isAuthenticated, logout } from "@/actions/auth";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FiMoon, FiSun } from "react-icons/fi";
 
 function Header() {
   const [isDark, setIsDark] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-    const isInitiallyDark = saved === "dark" || (!saved && prefersDark);
-
+    const isInitiallyDark = saved === "dark";
     document.documentElement.classList.toggle("dark", isInitiallyDark);
     setIsDark(isInitiallyDark);
+
+    setLoggedIn(isAuthenticated());
   }, []);
 
   const toggleTheme = () => {
@@ -23,6 +25,12 @@ function Header() {
     document.documentElement.classList.toggle("dark", newTheme);
     localStorage.setItem("theme", newTheme ? "dark" : "light");
     setIsDark(newTheme);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setLoggedIn(false);
+    router.push("/login");
   };
 
   return (
@@ -35,20 +43,38 @@ function Header() {
           alt="Book Library"
           className="mr-3"
         />
-        <Link href="/">Book Library</Link>
+        <Link href="/">Book Library Halo!</Link>
       </h1>
       <nav className="flex items-center space-x-6">
-        <Link
-          href="/"
-          className="text-text-color dark:text-white hover:text-text-hover dark:hover:text-gray-300 transition-colors"
-        >
-          Home
-        </Link>
-        <Link href={"/add"}>
-          <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
-            Add Book
+        {loggedIn && ( // Tampilkan link "Home" dan "Add Book" hanya jika login
+          <>
+            <Link
+              href="/"
+              className="text-text-color dark:text-white hover:text-text-hover dark:hover:text-gray-300 transition-colors"
+            >
+              Home
+            </Link>
+            <Link href={"/add"}>
+              <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
+                Add Book
+              </button>
+            </Link>
+          </>
+        )}
+        {loggedIn ? ( // Tampilkan tombol Logout jika login, jika tidak, tampilkan tombol Login
+          <button
+            onClick={handleLogout}
+            className="py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition duration-200"
+          >
+            Logout
           </button>
-        </Link>
+        ) : (
+          <Link href="/login">
+            <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
+              Login
+            </button>
+          </Link>
+        )}
         <button
           onClick={toggleTheme}
           aria-label="Toggle Theme"

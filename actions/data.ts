@@ -1,5 +1,8 @@
+// dzaky-pr/fp-pso/fp-pso-9738172cec4b52a89eaa97d40be888bf59610291/actions/data.ts
+
 import "server-only";
 import type { IBook } from "@/types";
+import { getAuthToken } from "./auth"; // --- TAMBAHKAN INI ---
 
 export const getBooks = async () => {
   try {
@@ -57,24 +60,40 @@ export const putBook = async (data: IBook) => {
       throw new Error("AWS_API_URL not configured");
     }
 
+    // --- PROTEKSI API - Dapatkan Token ---
+    const token = getAuthToken();
+    if (!token) {
+      // Jika tidak ada token, throw error yang akan ditangkap di frontend
+      throw new Error(
+        "Authentication required: Please log in to add/edit books.",
+      );
+    }
+    // --- AKHIR PROTEKSI API ---
+
     const response = await fetch(`${process.env.AWS_API_URL}/books`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // --- TAMBAHKAN HEADER INI ---
       },
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create the Book ${response.status}`);
+      const errorData = await response.json(); // Ambil pesan error dari respons API
+      throw new Error(
+        errorData.error ||
+          `Failed to create/update the Book: ${response.status}`,
+      );
     }
 
     return await response.json();
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to create the Book:", errorMessage);
-    throw new Error("Failed to create the Book.");
+    console.error("Failed to create/update the Book:", errorMessage);
+    // Lempar ulang error dengan pesan yang lebih informatif
+    throw new Error("Failed to create/update the Book: " + errorMessage);
   }
 };
 
@@ -84,15 +103,28 @@ export const deleteBook = async (id: number) => {
       throw new Error("AWS_API_URL not configured");
     }
 
+    // --- PROTEKSI API - Dapatkan Token ---
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error(
+        "Authentication required: Please log in to delete books.",
+      );
+    }
+    // --- AKHIR PROTEKSI API ---
+
     const response = await fetch(`${process.env.AWS_API_URL}/books/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // --- TAMBAHKAN HEADER INI ---
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to delete the Book ${response.status}`);
+      const errorData = await response.json(); // Ambil pesan error dari respons API
+      throw new Error(
+        errorData.error || `Failed to delete the Book: ${response.status}`,
+      );
     }
 
     return await response.json();
@@ -100,6 +132,6 @@ export const deleteBook = async (id: number) => {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to delete the Book:", errorMessage);
-    throw new Error("Failed to delete the Book.");
+    throw new Error("Failed to delete the Book: " + errorMessage);
   }
 };

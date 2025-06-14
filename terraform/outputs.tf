@@ -39,6 +39,11 @@ output "dynamodb_table_name" {
   value       = aws_dynamodb_table.books_table.name
 }
 
+output "users_table_name" {
+  description = "The name of the DynamoDB users table"
+  value = aws_dynamodb_table.users_table.name
+}
+
 output "lambda_function_name_output" {
   description = "Name of the Lambda function created"
   value       = aws_lambda_function.book_library_lambda.function_name

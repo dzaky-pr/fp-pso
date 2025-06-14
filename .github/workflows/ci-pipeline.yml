@@ -1,4 +1,4 @@
-name: 🛠 CI Pipeline
+name: "🛠 CI Pipeline"
 
 on:
   workflow_dispatch:
@@ -27,6 +27,16 @@ jobs:
         with:
           node-version: 18
           cache: "npm"
+
+      - name: 💾 Cache Next.js Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
       - name: ⛅ Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -65,10 +75,10 @@ jobs:
           echo "API Gateway URL: ${{ steps.tf_output.outputs.api_gateway_url }}"
           echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
 
-      - name: 📦 Install Dependencies
+      - name: 📦 Install Dependencies With Audit
         run: |
           # Install with audit and cache optimization
-          npm ci --prefer-offline --no-audit --silent
+          npm ci --prefer-offline  --cache ~/.npm
 
       - name: 🔍 Lint & Typecheck
         run: |
@@ -76,7 +86,8 @@ jobs:
           npm run typecheck
 
       - name: 🧪 Run Unit Tests
-        run: npm test -- --verbose
+        run: |
+          npm test -- --verbose
 
       - name: 🏗 Setup .env
         run: |
@@ -93,7 +104,7 @@ jobs:
 
       - name: 📦 Zip Artifacts
         run: |
-          zip -r artifact.zip artifact
+          cd artifact && zip -r ../artifact.zip . -x "*.log" "*.tmp" "node_modules/*"
 
       - name: 🔍 Verify Artifact Integrity
         run: |

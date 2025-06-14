@@ -1,6 +1,7 @@
 "use client";
 
 import { putBookInDB } from "@/actions/actions";
+import AuthRequiredWrapper from "@/components/AuthRequiredWrapper"; // --- TAMBAHKAN INI ---
 import Header from "@/components/Header";
 import type { IBook } from "@/types";
 import { useRouter } from "next/navigation";
@@ -52,108 +53,111 @@ function AddPage() {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 dark:bg-zinc-900 text-text-color dark:text-white transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-zinc-900 dark:to-zinc-800 transition-colors duration-300">
       <Header />
       {error && (
         <div className="my-5 w-full max-w-lg mx-auto bg-red-400 text-white p-4 rounded-lg shadow-md">
           {error}
         </div>
       )}
-      <form
-        onSubmit={handleSubmit}
-        className="my-10 w-full max-w-lg mx-auto p-6 rounded-2xl bg-white/40 dark:bg-white/10 border border-white/30 dark:border-white/20 backdrop-blur-md shadow-xl transition-all"
-      >
-        <h2 className="text-3xl font-bold mb-6 text-center">Add Book</h2>
 
-        {/* title */}
-        <div className="mb-4">
-          <label
-            htmlFor="title"
-            className="block font-semibold text-gray-800 dark:text-gray-200"
-          >
-            Title
-          </label>
-          <input
-            type="text"
-            id="title"
-            name="title"
-            value={book.title}
-            onChange={handleChange}
-            placeholder="Enter Book Title"
-            className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
-            required
-          />
-        </div>
-
-        {/* author */}
-        <div className="mb-4">
-          <label
-            htmlFor="author"
-            className="block font-semibold text-gray-800 dark:text-gray-200"
-          >
-            Author
-          </label>
-          <input
-            type="text"
-            id="author"
-            name="author"
-            value={book.author}
-            onChange={handleChange}
-            placeholder="Enter Author's Name"
-            className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
-            required
-          />
-        </div>
-
-        {/* price */}
-        <div className="mb-4">
-          <label
-            htmlFor="price"
-            className="block font-semibold text-gray-800 dark:text-gray-200"
-          >
-            Price
-          </label>
-          <input
-            type="number"
-            id="price"
-            name="price"
-            step="0.01"
-            value={book.price === 0 ? "" : book.price}
-            onChange={handleChange}
-            placeholder="Enter Book Price"
-            className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
-            required
-          />
-        </div>
-
-        {/* description */}
-        <div className="mb-6">
-          <label
-            htmlFor="description"
-            className="block font-semibold text-gray-800 dark:text-gray-200"
-          >
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={book.description}
-            onChange={handleChange}
-            placeholder="Enter Book Description"
-            rows={4}
-            className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full py-3 bg-btn-color text-white rounded-xl hover:bg-text-hover transition duration-300 shadow-md"
-          disabled={loading}
+      <AuthRequiredWrapper>
+        <form
+          onSubmit={handleSubmit}
+          className="my-10 w-full max-w-lg mx-auto p-6 rounded-2xl bg-white/40 dark:bg-white/10 border border-white/30 dark:border-white/20 backdrop-blur-md shadow-xl transition-all"
         >
-          {loading ? "Loading..." : "Add Book"}
-        </button>
-      </form>
+          <h2 className="text-3xl font-bold mb-6 text-center">Add Book</h2>
+
+          {/* title */}
+          <div className="mb-4">
+            <label
+              htmlFor="title"
+              className="block font-semibold text-gray-800 dark:text-gray-200"
+            >
+              Title
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={book.title}
+              onChange={handleChange}
+              placeholder="Enter Book Title"
+              className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
+              required
+            />
+          </div>
+
+          {/* author */}
+          <div className="mb-4">
+            <label
+              htmlFor="author"
+              className="block font-semibold text-gray-800 dark:text-gray-200"
+            >
+              Author
+            </label>
+            <input
+              type="text"
+              id="author"
+              name="author"
+              value={book.author}
+              onChange={handleChange}
+              placeholder="Enter Author's Name"
+              className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
+              required
+            />
+          </div>
+
+          {/* price */}
+          <div className="mb-4">
+            <label
+              htmlFor="price"
+              className="block font-semibold text-gray-800 dark:text-gray-200"
+            >
+              Price
+            </label>
+            <input
+              type="number"
+              id="price"
+              name="price"
+              step="0.01"
+              value={book.price === 0 ? "" : book.price}
+              onChange={handleChange}
+              placeholder="Enter Book Price"
+              className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
+              required
+            />
+          </div>
+
+          {/* description */}
+          <div className="mb-6">
+            <label
+              htmlFor="description"
+              className="block font-semibold text-gray-800 dark:text-gray-200"
+            >
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={book.description}
+              onChange={handleChange}
+              placeholder="Enter Book Description"
+              rows={4}
+              className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3 bg-btn-color text-white rounded-xl hover:bg-text-hover transition duration-300 shadow-md"
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "Add Book"}
+          </button>
+        </form>
+      </AuthRequiredWrapper>
     </div>
   );
 }
