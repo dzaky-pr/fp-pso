@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // Load environment variables
 require("dotenv").config({ path: ".env.local" });
 

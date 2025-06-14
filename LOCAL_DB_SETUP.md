@@ -39,7 +39,35 @@ aws dynamodb create-table \
     --endpoint-url http://localhost:8000 \
     --region ap-southeast-1
 
-# 3. Start Admin UI
+# 3. Buat tabel users
+aws dynamodb create-table \
+    --table-name users \
+    --attribute-definitions \
+        AttributeName=userId,AttributeType=S \
+        AttributeName=email,AttributeType=S \
+    --key-schema \
+        AttributeName=userId,KeyType=HASH \
+    --billing-mode PAY_PER_REQUEST \
+    --global-secondary-indexes '[ \
+        { \
+            "IndexName": "EmailIndex", \
+            "KeySchema": [ \
+                { "AttributeName": "email", "KeyType": "HASH" } \
+            ], \
+            "Projection": { \
+                "ProjectionType": "ALL" \
+            }, \
+            "ProvisionedThroughput": { \
+                "ReadCapacityUnits": 1, \
+                "WriteCapacityUnits": 1 \
+            } \
+        } \
+    ]' \
+    --endpoint-url http://localhost:8000 \
+    --region ap-southeast-1 \
+    --no-cli-pager
+
+# 4. Start Admin UI
 docker-compose up -d dynamodb-admin
 ```
 
