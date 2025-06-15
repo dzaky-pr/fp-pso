@@ -56,7 +56,7 @@ jobs:
           echo "API Gateway URL: ${{ steps.tf_output.outputs.api_gateway_url }}"
           echo "Artifact Bucket: ${{ steps.tf_output.outputs.artifact_bucket }}"
           echo "Production Public IP: ${{ steps.tf_output.outputs.production_public_ip }}"
-          echo "Staging Public IP: ${{ steps.tf_output.outputs.Staging_public_ip }}"
+          echo "Staging Public IP: ${{ steps.tf_output.outputs.staging_public_ip }}"
 
       - name: ☁ Download latest.txt
         run: |
@@ -89,13 +89,17 @@ jobs:
             rm -rf ~/deploy
             mkdir -p ~/deploy
 
-            # Download the ZIP artifact from S3
+            # Download the ZIP artifact and its checksum from S3
             aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
+            aws s3 cp s3://$ARTIFACT_BUCKET/${VERSION%.zip}.sha256 ~/artifact.zip.sha256 --region $AWS_REGION
+
+            # Validate artifact.zip against its checksum
+            sha256sum -c ~/artifact.zip.sha256
 
             # Unzip it to the deploy folder
             unzip ~/artifact.zip -d ~/deploy
 
-            cd deploy/artifact/standalone
+            cd ~/deploy/artifact/standalone
             sudo chmod +rwx server.js
             sudo chmod +rwx package.json
 
@@ -154,10 +158,16 @@ jobs:
             # Download the ZIP artifact from S3
             aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
 
+            # Download the checksum file
+            aws s3 cp s3://$ARTIFACT_BUCKET/${VERSION%.zip}.sha256 ~/artifact.zip.sha256 --region $AWS_REGION
+
+            # Validate artifact.zip against its checksum
+            sha256sum -c ~/artifact.zip.sha256
+
             # Unzip it to the deploy folder
             unzip ~/artifact.zip -d ~/deploy
 
-            cd deploy/artifact/standalone
+            cd ~/deploy/artifact/standalone
             sudo chmod +rwx server.js
 
             sleep 5
