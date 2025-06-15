@@ -4,9 +4,15 @@ interface ToggleProps {
   enabled: boolean;
   setEnabled: (enabled: boolean) => void;
   label?: string; // Opsional jika Anda ingin label di sampingnya
+  "data-testid"?: string;
 }
 
-export default function Toggle({ enabled, setEnabled, label }: ToggleProps) {
+export default function Toggle({
+  enabled,
+  setEnabled,
+  label,
+  "data-testid": dataTestId,
+}: ToggleProps) {
   return (
     <div className="flex items-center">
       {label && (
@@ -20,6 +26,7 @@ export default function Toggle({ enabled, setEnabled, label }: ToggleProps) {
       <button
         type="button"
         id="toggle-button"
+        data-testid={dataTestId}
         onClick={() => setEnabled(!enabled)}
         className={`${
           enabled ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"

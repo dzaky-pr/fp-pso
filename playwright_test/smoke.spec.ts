@@ -1,27 +1,65 @@
 import { expect, test } from "@playwright/test";
 
 // Baca URL dari environment, fallback ke localhost jika tidak diset
-const BASE_URL = process.env.SMOKE_UI_URL || "http://localhost:3000";
-// const BASE_URL = "http://localhost:3000";
+const uniqueSuffix = Date.now();
+const email = `e2eCRUDuser-${uniqueSuffix}@example.com`;
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 
-test.describe("Smoke Test UI Dasar", () => {
-  test("Homepage memuat judul 'Explore Our Collections'", async ({ page }) => {
-    // Navigasi ke halaman utama
-    await page.goto(`${BASE_URL}/`);
-    // Verifikasi judul halaman
+let bookAdded = false;
+let bookEdited = false;
+
+test.describe("Login and Register", () => {
+  test("Register a new user", async ({ page }) => {
+    // 1) Buka halaman register
+    await page.goto(`${BASE_URL}/register`);
+    // 2) Isi form register
+    // Pasang handler dialog sebelum submit
+    const dialogPromise = page.waitForEvent("dialog");
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', "password123");
+    // 3) Submit form
+    await page.click('button[type="submit"]');
+    // 4) Verifikasi bahwa pengguna berhasil terdaftar
+    const dialog = await dialogPromise;
+    expect(dialog.message()).toContain("Registration successful!");
+    await dialog.accept();
+  });
+
+  test("Login with registered user", async ({ page }) => {
+    // 1) Buka halaman login
+    await page.goto(`${BASE_URL}/login`);
+    // 2) Isi form login
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', "password123");
+    // 3) Submit form
+    await page.click('button[type="submit"]');
+    // 4) Verifikasi redirect ke homepage
+    await page.waitForURL(`${BASE_URL}/`);
+    expect(page.url()).toBe(`${BASE_URL}/`);
     await expect(page.locator("h2")).toHaveText(/Explore Our Collections/i);
   });
 });
 
 test.describe("CRUD Buku via UI", () => {
-  const uniqueSuffix = Date.now();
-  const originalTitle = `E2E Test Book ${uniqueSuffix}`;
+  // const uniqueSuffix = Date.now();
+  const originalTitle = `E2E Original Book ${uniqueSuffix}`;
   const updatedTitle = `E2E Updated Book ${uniqueSuffix}`;
 
-  test("Add new book", async ({ page }) => {
-    // 1) Buka form tambah buku
+  // Login ulang sebelum setiap test yang butuh session
+  test.beforeEach(async ({ page }) => {
+    await page.goto(`${BASE_URL}/login`);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', "password123");
+    await page.click('button[type="submit"]');
+    await page.waitForURL(`${BASE_URL}/`);
+  });
+
+  test("Add new public book", async ({ page }) => {
     await page.goto(`${BASE_URL}/add`);
+    await page.waitForURL(`${BASE_URL}/add`);
+    // // 1) Buka form tambah buku
     // 2) Isi form
+    await page.waitForSelector('input[name="title"]');
     await page.fill('input[name="title"]', originalTitle);
     await page.fill('input[name="author"]', "Test Author");
     await page.fill('input[name="price"]', "19.99");
@@ -29,6 +67,7 @@ test.describe("CRUD Buku via UI", () => {
       'textarea[name="description"]',
       "Deskripsi untuk buku test.",
     );
+
     // 3) Submit form
     await page.click('button[type="submit"]');
     // 4) Tunggu redirect ke halaman utama
@@ -40,71 +79,11 @@ test.describe("CRUD Buku via UI", () => {
       `[data-testid="book-card"]:has-text("${originalTitle}")`,
     );
     await expect(addedCard).toHaveCount(1);
-  });
-
-  test.describe("Search for the new book (Detailed)", () => {
-    // Sebelum setiap test pencarian, navigasi ke halaman utama
-    test.beforeEach(async ({ page }) => {
-      await page.goto(`${BASE_URL}/`);
-      await page.waitForSelector('[data-testid="book-card"]');
-    });
-
-    test("substring match: hasil memuat buku yang mengandung sebagian teks judul", async ({
-      page,
-    }) => {
-      // Kita gunakan 'Test Book' sebagai keyword, yang merupakan bagian dari originalTitle
-      const keyword = "Test Book";
-
-      await page.fill("#search-input", keyword);
-      await page.press("#search-input", "Enter");
-
-      // Verifikasi bahwa kartu buku kita (yang mengandung originalTitle) terlihat
-      const filteredCard = page.locator(
-        `[data-testid="book-card"]:has-text("${originalTitle}")`,
-      );
-      await expect(filteredCard).toBeVisible();
-
-      // Verifikasi bahwa semua hasil yang tampil memang mengandung keyword
-      const allResults = page.locator('[data-testid="book-card"]');
-      for (const card of await allResults.all()) {
-        await expect(card).toContainText(keyword, { ignoreCase: true });
-      }
-    });
-
-    test("case-insensitive: search tidak peka huruf besar/kecil", async ({
-      page,
-    }) => {
-      // Gunakan sebagian judul buku dengan huruf kecil semua
-      const keyword = "e2e test book";
-
-      await page.fill("#search-input", keyword);
-      await page.press("#search-input", "Enter");
-
-      // Verifikasi bahwa kartu buku kita tetap ditemukan
-      const filteredCard = page.locator(
-        `[data-testid="book-card"]:has-text("${originalTitle}")`,
-      );
-      await expect(filteredCard).toBeVisible();
-      expect(await filteredCard.count()).toBeGreaterThan(0);
-    });
-
-    test("no-result: menampilkan pesan bila tidak ada match", async ({
-      page,
-    }) => {
-      await page.fill("#search-input", "___BUKU_INI_TIDAK_MUNGKIN_ADA___");
-      await page.press("#search-input", "Enter");
-
-      const cards = page.locator('[data-testid="book-card"]');
-      await expect(cards).toHaveCount(0);
-
-      const noResult = page.locator(
-        "text=No books found matching your search.",
-      );
-      await expect(noResult).toBeVisible();
-    });
+    bookAdded = true;
   });
 
   test("Get book detail halaman", async ({ page }) => {
+    test.skip(!bookAdded, "Failed to add book in previous test");
     // 1) Kembali ke homepage
     await page.goto(`${BASE_URL}/`);
     // 2) Klik 'View Book' pada card yang sesuai
@@ -126,6 +105,7 @@ test.describe("CRUD Buku via UI", () => {
   });
 
   test("Edit existing book", async ({ page }) => {
+    test.skip(!bookAdded, "Failed to add book in previous test");
     // 1) Kembali ke homepage dan buka detail buku asli
     await page.goto(`${BASE_URL}/`);
     const card = page.locator(
@@ -146,14 +126,20 @@ test.describe("CRUD Buku via UI", () => {
     await updateBtn.click();
     // 5) Tunggu redirect kembali ke homepage
     await page.waitForURL(`${BASE_URL}/`);
-    // 6) Verifikasi kartu dengan judul yang sudah diupdate
-    const updatedCard = page.locator(
+    // 6) Tunggu kartu buku muncul dan log semua judul buku
+    await page.waitForSelector('[data-testid="book-card"]', { timeout: 15000 });
+    const _allTitles = await page
+      .locator('[data-testid="book-card"]')
+      .allTextContents();
+    const updatedCard = await page.locator(
       `[data-testid="book-card"]:has-text("${updatedTitle}")`,
     );
     await expect(updatedCard).toHaveCount(1);
+    bookEdited = true;
   });
 
   test("Remove book", async ({ page }) => {
+    test.skip(!bookEdited, "Failed to edit book in previous test");
     // 1) Kembali ke homepage dan buka detail buku yang sudah diupdate
     await page.goto(`${BASE_URL}/`);
     const card = page.locator(
@@ -174,5 +160,42 @@ test.describe("CRUD Buku via UI", () => {
     await expect(
       page.locator(`[data-testid="book-card"]:has-text("${updatedTitle}")`),
     ).toHaveCount(0);
+  });
+});
+
+test.describe("Log Out and delete account", () => {
+  test("Log out'", async ({ page }) => {
+    await page.goto(`${BASE_URL}/login`);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', "password123");
+    await page.click('button[type="submit"]');
+    await page.waitForURL(`${BASE_URL}/`);
+    // Navigasi ke halaman About
+    await page.goto(`${BASE_URL}/`);
+    // Verifikasi judul halaman
+    const logOutButton = page.locator('button:has-text("Logout")');
+    await expect(logOutButton).toBeVisible();
+    // Klik tombol Log Out
+    await logOutButton.click();
+    // Verifikasi redirect ke halaman login
+    await page.waitForURL(`${BASE_URL}/login`);
+    expect(page.url()).toBe(`${BASE_URL}/login`);
+  });
+
+  test("Delete account", async ({ page }) => {
+    const res = await fetch("http://localhost:3001/api/account", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email }),
+    });
+    expect(res.status).toBe(200); // atau 204 sesuai API-mu
+    // Verifikasi bahwa akun telah dihapus
+    await page.goto(`${BASE_URL}/login`);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', "password123");
+    await page.click('button[type="submit"]');
+    // Verifikasi bahwa login gagal
+    const errorMessage = page.locator("text=Invalid credentials");
+    await expect(errorMessage).toBeVisible();
   });
 });

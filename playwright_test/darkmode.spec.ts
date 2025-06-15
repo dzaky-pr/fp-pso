@@ -10,7 +10,19 @@ test.describe("Dark Mode Smoke Tests", () => {
     // NOTE: ubah "1234" jadi ID yang valid jika butuh test detail;
     // kalau belum ada buku, pakai ID random atau buat buku dulu
     { name: "Book Detail", path: "/1" },
+    { name: "My Books", path: "/my-books" },
+    { name: "Login", path: "/login" },
+    { name: "Register", path: "/register" },
   ];
+
+  test.beforeEach(async ({ page }) => {
+    // Pastikan setiap test dimulai dari halaman utama
+    await page.goto(`${BASE_URL}/login`);
+    await page.fill('input[name="email"]', "user@example.com");
+    await page.fill('input[name="password"]', "password123");
+    await page.click('button[type="submit"]');
+    await page.waitForURL(`${BASE_URL}/`);
+  });
 
   for (const { name, path } of pages) {
     test(`Toggle Dark Mode on ${name} page`, async ({ page }) => {
@@ -19,7 +31,9 @@ test.describe("Dark Mode Smoke Tests", () => {
 
       // 2) referensi elemen <html> dan tombol toggle
       const html = page.locator("html");
-      const toggle = page.locator('button[aria-label="Toggle Theme"]');
+      const toggle = page.locator(
+        'button[aria-label="toggle-theme-desktop"], button[aria-label="toggle-theme-mobile"]',
+      );
 
       // 3) pastikan default *tidak* dark
       await expect(html).not.toHaveClass(/dark/);

@@ -98,7 +98,7 @@ function Header() {
           )}
           <button
             onClick={toggleTheme}
-            aria-label="Toggle Theme"
+            aria-label="toggle-theme-desktop"
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {isDark ? (
@@ -113,7 +113,7 @@ function Header() {
         <div className="flex items-center md:hidden">
           <button
             onClick={toggleTheme}
-            aria-label="Toggle Theme"
+            aria-label="toggle-theme-mobile"
             className="p-2 mr-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {isDark ? (

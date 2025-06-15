@@ -158,6 +158,7 @@ function AddPage() {
               Keep this book private?
             </span>
             <Toggle
+              data-testid="private-toggle"
               enabled={book.isPrivate ?? false}
               setEnabled={(value) =>
                 setBook((prev) => ({ ...prev, isPrivate: value }))
