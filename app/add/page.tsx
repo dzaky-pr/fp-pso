@@ -1,8 +1,10 @@
 "use client";
 
 import { putBookInDB } from "@/actions/actions";
-import AuthRequiredWrapper from "@/components/AuthRequiredWrapper"; // --- TAMBAHKAN INI ---
+import { getAuthToken } from "@/actions/auth";
+import AuthRequiredWrapper from "@/components/AuthRequiredWrapper";
 import Header from "@/components/Header";
+import Toggle from "@/components/Toggle";
 import type { IBook } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,6 +16,7 @@ function AddPage() {
     author: "",
     price: 0,
     description: "",
+    isPrivate: false,
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,7 +44,8 @@ function AddPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await putBookInDB(book);
+      const token = getAuthToken();
+      await putBookInDB(book, token);
       router.push("/");
       router.refresh();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -146,6 +150,18 @@ function AddPage() {
               rows={4}
               className="w-full p-3 mt-2 bg-white/80 dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition"
               required
+            />
+          </div>
+
+          <div className="mb-6 flex items-center justify-between">
+            <span className="font-semibold text-gray-800 dark:text-gray-200">
+              Keep this book private?
+            </span>
+            <Toggle
+              enabled={book.isPrivate ?? false}
+              setEnabled={(value) =>
+                setBook((prev) => ({ ...prev, isPrivate: value }))
+              }
             />
           </div>
 

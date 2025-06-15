@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-require-imports */
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -39,12 +40,45 @@ const getBook = async (id) => {
   return result.Item || { message: "not found" };
 };
 
-const getAllBooks = async () => {
-  const result = await dynamo.send(new ScanCommand({ TableName: tablename }));
+const getAllBooks = async (user) => {
+  const params = {
+    TableName: tablename,
+  };
+
+  if (user && user.userId) {
+    params.FilterExpression =
+      "#isPrivate = :isPrivateFalse OR #ownerId = :userId";
+    params.ExpressionAttributeNames = {
+      "#isPrivate": "isPrivate",
+      "#ownerId": "ownerId",
+    };
+    params.ExpressionAttributeValues = {
+      ":isPrivateFalse": false,
+      ":userId": user.userId,
+    };
+  } else {
+    params.FilterExpression =
+      "attribute_not_exists(isPrivate) OR #isPrivate = :isPrivateFalse";
+    params.ExpressionAttributeNames = { "#isPrivate": "isPrivate" };
+    params.ExpressionAttributeValues = { ":isPrivateFalse": false };
+  }
+
+  const result = await dynamo.send(new ScanCommand(params));
   return result.Items;
 };
 
-const putBook = async (book) => {
+const getMyBooks = async (user) => {
+  const result = await dynamo.send(
+    new ScanCommand({
+      TableName: tablename,
+      FilterExpression: "ownerId = :userId",
+      ExpressionAttributeValues: { ":userId": user.userId },
+    }),
+  );
+  return result.Items;
+};
+
+const putBook = async (book, user) => {
   await dynamo.send(
     new PutCommand({
       TableName: tablename,
@@ -54,6 +88,8 @@ const putBook = async (book) => {
         author: book.author,
         description: book.description,
         title: book.title,
+        isPrivate: book.isPrivate || false,
+        ownerId: user.userId,
       },
     }),
   );
@@ -212,34 +248,50 @@ const handler = async (event) => {
   try {
     const { httpMethod, pathParameters, body: requestBody } = event;
     const path = event.routeKey || `${httpMethod} ${event.path}`;
-
-    // biome-ignore lint/suspicious/noConsoleLog: <explanation>
-    console.log(`Processing: ${path}`);
+    let user = null;
+    try {
+      if (event.headers?.Authorization || event.headers?.authorization) {
+        user = authenticate(event);
+      }
+    } catch (_err) {
+      /* Biarkan saja */
+    }
 
     switch (path) {
       case "GET /books":
-        body = await getAllBooks();
+        body = await getAllBooks(user);
         break;
 
       case "GET /books/{id}":
         body = await getBook(pathParameters.id);
+        if (body.isPrivate && (!user || user.userId !== body.ownerId)) {
+          body = { message: "not found" };
+        }
+        break;
+
+      // RUTE BARU
+      case "GET /my-books":
+        if (!user) throw new Error("Authentication required");
+        body = await getMyBooks(user);
         break;
 
       case "PUT /books": {
-        const user = authenticate(event); // Verifikasi token. Jika gagal, akan throw error.
-        // biome-ignore lint/suspicious/noConsoleLog: <explanation>
-        console.log(`Authenticated user ${user.email} for PUT /books.`);
+        const currentUser = authenticate(event);
         const bookData = JSON.parse(requestBody);
-        body = await putBook(bookData);
+        body = await putBook(bookData, currentUser);
         break;
       }
 
       case "DELETE /books/{id}": {
-        const user = authenticate(event); // Verifikasi token. Jika gagal, akan throw error.
-        // biome-ignore lint/suspicious/noConsoleLog: <explanation>
-        console.log(
-          `Authenticated user ${user.email} for DELETE /books/${event.pathParameters.id}.`,
-        );
+        const currentUser = authenticate(event);
+        const bookToDelete = await getBook(pathParameters.id);
+        if (
+          !bookToDelete.ownerId ||
+          bookToDelete.ownerId !== currentUser.userId
+        ) {
+          statusCode = 403;
+          throw new Error("You are not the owner of this book.");
+        }
         body = await deleteBook(pathParameters.id);
         break;
       }
@@ -247,7 +299,7 @@ const handler = async (event) => {
       case "POST /register": {
         const { email, password } = JSON.parse(requestBody);
         body = await registerUser(email, password);
-        statusCode = 201; // HTTP Status Code 201 Created
+        statusCode = 201;
         break;
       }
 
@@ -273,10 +325,24 @@ const handler = async (event) => {
     }
   } catch (err) {
     console.error("Error:", err);
-    statusCode =
-      err.message.includes("exists") || err.message.includes("credentials")
-        ? 400
-        : 500;
+    if (err.message.includes("not the owner")) {
+      statusCode = 403;
+    } else if (
+      err.message.includes("Invalid") ||
+      err.message.includes("Expired") ||
+      err.message.includes("malformed") ||
+      err.message.includes("Authorization") ||
+      err.message.includes("Authentication required")
+    ) {
+      statusCode = 401;
+    } else if (
+      err.message.includes("exists") ||
+      err.message.includes("credentials")
+    ) {
+      statusCode = 400;
+    } else {
+      statusCode = 500;
+    }
     body = { error: err.message };
   }
 

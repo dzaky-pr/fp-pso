@@ -34,11 +34,14 @@ const convertToAPIGatewayEvent = (req) => {
     routeKey = "POST /register";
   } else if (method === "POST" && path === "/api/login") {
     routeKey = "POST /login";
+  } else if (method === "POST" && path === "/api/login") {
+    routeKey = "POST /login";
   } else if (method === "DELETE" && path === "/api/account") {
     routeKey = "DELETE /account";
+  } else if (method === "GET" && path === "/api/my-books") {
+    routeKey = "GET /my-books";
   }
 
-  // Extract path parameters
   if (idMatch) {
     pathParameters.id = idMatch[1];
   }
@@ -107,6 +110,8 @@ app.listen(PORT, () => {
   console.log(`   POST   http://localhost:${PORT}/api/register`);
   // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   POST   http://localhost:${PORT}/api/login`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`   GET    http://localhost:${PORT}/api/my-books`);
   // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
   // biome-ignore lint/suspicious/noConsoleLog: <explanation>

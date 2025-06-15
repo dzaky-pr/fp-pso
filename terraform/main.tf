@@ -215,6 +215,19 @@ resource "aws_iam_policy" "lambda_policy" {
       },
       {
         Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:Scan",
+          "dynamodb:Query" # Diperlukan untuk login via EmailIndex
+        ]
+        Effect   = "Allow"
+        Resource = [
+            aws_dynamodb_table.users_table.arn,
+            "${aws_dynamodb_table.users_table.arn}/index/EmailIndex" 
+        ]
+      },
+      {
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -296,6 +309,23 @@ resource "aws_apigatewayv2_integration" "books_integration" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_route" "get_my_books" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "GET /my-books"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "post_register" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "POST /register"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "post_login" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "POST /login"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
 
 # Define routes based on lambda.js
 resource "aws_apigatewayv2_route" "get_books" {

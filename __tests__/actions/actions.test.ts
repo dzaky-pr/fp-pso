@@ -5,7 +5,6 @@ import {
 } from "../../actions/actions";
 import * as dataModule from "../../actions/data";
 
-// Mock the data module
 jest.mock("../../actions/data", () => ({
   getBook: jest.fn(),
   putBook: jest.fn(),
@@ -21,6 +20,8 @@ const mockPutBook = dataModule.putBook as jest.MockedFunction<
 const mockDeleteBook = dataModule.deleteBook as jest.MockedFunction<
   typeof dataModule.deleteBook
 >;
+
+const dummyToken = "dummy-token";
 
 describe("Actions", () => {
   beforeEach(() => {
@@ -42,9 +43,9 @@ describe("Actions", () => {
         data: mockBook,
       });
 
-      const result = await getBookFromDB(1);
+      const result = await getBookFromDB(1, dummyToken);
 
-      expect(mockGetBook).toHaveBeenCalledWith(1);
+      expect(mockGetBook).toHaveBeenCalledWith(1, dummyToken);
       expect(result).toEqual({
         status: 200,
         data: mockBook,
@@ -57,9 +58,9 @@ describe("Actions", () => {
         data: { message: "Book not found" },
       });
 
-      const result = await getBookFromDB(999);
+      const result = await getBookFromDB(999, dummyToken);
 
-      expect(mockGetBook).toHaveBeenCalledWith(999);
+      expect(mockGetBook).toHaveBeenCalledWith(999, dummyToken);
       expect(result).toEqual({
         status: 404,
         data: { message: "Book not found" },
@@ -82,9 +83,9 @@ describe("Actions", () => {
         data: newBook,
       });
 
-      const result = await putBookInDB(newBook);
+      const result = await putBookInDB(newBook, dummyToken);
 
-      expect(mockPutBook).toHaveBeenCalledWith(newBook);
+      expect(mockPutBook).toHaveBeenCalledWith(newBook, dummyToken);
       expect(result).toEqual({
         status: 200,
         data: newBook,
@@ -105,9 +106,9 @@ describe("Actions", () => {
         data: { error: "Invalid book data" },
       });
 
-      const result = await putBookInDB(invalidBook);
+      const result = await putBookInDB(invalidBook, dummyToken);
 
-      expect(mockPutBook).toHaveBeenCalledWith(invalidBook);
+      expect(mockPutBook).toHaveBeenCalledWith(invalidBook, dummyToken);
       expect(result).toEqual({
         status: 400,
         data: { error: "Invalid book data" },
@@ -122,9 +123,9 @@ describe("Actions", () => {
         data: { message: "Book deleted successfully" },
       });
 
-      const result = await deleteBookInDB(1);
+      const result = await deleteBookInDB(1, dummyToken);
 
-      expect(mockDeleteBook).toHaveBeenCalledWith(1);
+      expect(mockDeleteBook).toHaveBeenCalledWith(1, dummyToken);
       expect(result).toEqual({
         status: 200,
         data: { message: "Book deleted successfully" },
@@ -137,9 +138,9 @@ describe("Actions", () => {
         data: { error: "Book not found" },
       });
 
-      const result = await deleteBookInDB(999);
+      const result = await deleteBookInDB(999, dummyToken);
 
-      expect(mockDeleteBook).toHaveBeenCalledWith(999);
+      expect(mockDeleteBook).toHaveBeenCalledWith(999, dummyToken);
       expect(result).toEqual({
         status: 404,
         data: { error: "Book not found" },

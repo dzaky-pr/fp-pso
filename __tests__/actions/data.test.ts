@@ -1,6 +1,5 @@
 import { getBooks } from "../../actions/data";
 
-// Mock fetch globally
 global.fetch = jest.fn();
 
 const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
@@ -16,7 +15,7 @@ describe("Data Actions", () => {
   });
 
   describe("getBooks", () => {
-    it("fetches books successfully", async () => {
+    it("fetches books successfully without a token", async () => {
       const mockBooks = [
         {
           id: 1,
@@ -40,15 +39,39 @@ describe("Data Actions", () => {
         json: async () => mockBooks,
       } as Response);
 
-      const result = await getBooks();
+      const result = await getBooks(null);
 
       expect(mockFetch).toHaveBeenCalledWith("https://test-api.com/books", {
         cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
       expect(result).toEqual({
         status: 200,
         data: mockBooks,
+      });
+    });
+
+    it("fetches books successfully with a token", async () => {
+      const mockBooks = [{ id: 1, title: "Book 1" }];
+      const dummyToken = "dummy-token";
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockBooks,
+      } as Response);
+
+      await getBooks(dummyToken);
+
+      expect(mockFetch).toHaveBeenCalledWith("https://test-api.com/books", {
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${dummyToken}`,
+        },
       });
     });
 
@@ -59,18 +82,16 @@ describe("Data Actions", () => {
         json: async () => ({ error: "Internal Server Error" }),
       } as Response);
 
-      const result = await getBooks();
+      const result = await getBooks(null);
 
-      expect(result).toEqual({
-        status: 500,
-        data: { error: "Internal Server Error" },
-      });
+      expect(result.status).toEqual(500);
+      expect(result.data).toEqual({ error: "Internal Server Error" });
     });
 
     it("handles network error", async () => {
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      const result = await getBooks();
+      const result = await getBooks(null);
       expect(result).toEqual({
         status: 500,
         data: [],

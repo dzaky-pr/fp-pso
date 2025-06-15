@@ -1,11 +1,30 @@
-import { getBooks } from "@/actions/data";
+"use client";
+
+import { getBooks } from "@/actions/actions";
+import { getAuthToken } from "@/actions/auth";
 import AuthProtectedBookList from "@/components/AuthProtectedBookList";
 import Header from "@/components/Header";
 import type { IBook } from "@/types";
+import { useEffect, useState } from "react";
 
-export default async function Home() {
-  const booksData = await getBooks();
-  const books: IBook[] = Array.isArray(booksData?.data) ? booksData.data : [];
+export default function Home() {
+  const [books, setBooks] = useState<IBook[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setLoading(true);
+      const token = getAuthToken();
+      const booksData = await getBooks(token);
+
+      if (booksData.status === 200 && Array.isArray(booksData.data)) {
+        setBooks(booksData.data);
+      }
+      setLoading(false);
+    };
+
+    fetchBooks();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-zinc-900 dark:to-zinc-800 transition-colors duration-300">
@@ -17,7 +36,11 @@ export default async function Home() {
             Explore Our Collections
           </h2>
         </div>
-        <AuthProtectedBookList initialBooks={books} />
+        {loading ? (
+          <div className="text-center py-20">Loading books...</div>
+        ) : (
+          <AuthProtectedBookList initialBooks={books} />
+        )}
       </main>
     </div>
   );

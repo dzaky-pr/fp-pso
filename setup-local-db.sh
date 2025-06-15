@@ -21,6 +21,11 @@ else
     exit 1
 fi
 
+# Hapus tabel 'books' jika sudah ada
+echo "🧹 Deleting existing 'books' table (if any)..."
+aws dynamodb delete-table --table-name books --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager > /dev/null 2>&1
+sleep 2
+
 # Create the books table
 echo "📊 Creating 'books' table..."
 aws dynamodb create-table \
@@ -49,7 +54,9 @@ aws dynamodb put-item \
         "title": {"S": "The Great Gatsby"},
         "author": {"S": "F. Scott Fitzgerald"},
         "price": {"N": "15.99"},
-        "description": {"S": "A classic American novel set in the Jazz Age"}
+        "description": {"S": "A classic American novel set in the Jazz Age"},
+        "isPrivate": {"BOOL": false},
+        "ownerId": {"S": "user-1-system"}
     }' \
     --endpoint-url http://localhost:8000 \
     --region ap-southeast-1 \
@@ -62,7 +69,9 @@ aws dynamodb put-item \
         "title": {"S": "To Kill a Mockingbird"},
         "author": {"S": "Harper Lee"},
         "price": {"N": "12.50"},
-        "description": {"S": "A novel about racial injustice in the American South"}
+        "description": {"S": "A novel about racial injustice in the American South"},
+        "isPrivate": {"BOOL": true},
+        "ownerId": {"S": "user-1-system"}
     }' \
     --endpoint-url http://localhost:8000 \
     --region ap-southeast-1 \
@@ -75,13 +84,19 @@ aws dynamodb put-item \
         "title": {"S": "1984"},
         "author": {"S": "George Orwell"},
         "price": {"N": "13.25"},
-        "description": {"S": "A dystopian social science fiction novel"}
+        "description": {"S": "A dystopian social science fiction novel"},
+        "isPrivate": {"BOOL": false},
+        "ownerId": {"S": "user-2-system"}
     }' \
     --endpoint-url http://localhost:8000 \
     --region ap-southeast-1 \
     --no-cli-pager
 
 echo "✅ Sample data added!"
+
+echo "🧹 Deleting existing 'users' table (if any)..."
+aws dynamodb delete-table --table-name users --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager > /dev/null 2>&1
+sleep 2
 
 echo "📊 Creating 'users' table..."
 aws dynamodb create-table \

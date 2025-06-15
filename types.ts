@@ -4,6 +4,8 @@ export interface IBook {
   author: string;
   price: number;
   description: string;
+  isPrivate?: boolean;
+  ownerId?: string;
 }
 
 export interface IUser {

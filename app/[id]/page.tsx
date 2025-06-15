@@ -1,8 +1,10 @@
 "use client";
 
 import { deleteBookInDB, getBookFromDB, putBookInDB } from "@/actions/actions";
+import { getAuthToken, getUserIdFromToken } from "@/actions/auth";
 import AuthRequiredWrapper from "@/components/AuthRequiredWrapper";
 import Header from "@/components/Header";
+import Toggle from "@/components/Toggle";
 import type { IBook } from "@/types";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,6 +14,7 @@ function BookPage({ params }: { params: { id: number } }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const router = useRouter();
 
   const handleChange = (
@@ -29,6 +32,11 @@ function BookPage({ params }: { params: { id: number } }) {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOwner) {
+      // Pengaman tambahan
+      setError("You do not have permission to edit this book.");
+      return;
+    }
     const confirmed = window.confirm(
       "Apakah Anda yakin ingin mengedit buku ini?",
     );
@@ -36,13 +44,13 @@ function BookPage({ params }: { params: { id: number } }) {
     setLoading(true);
     try {
       if (book) {
-        await putBookInDB(book);
+        const token = getAuthToken();
+        await putBookInDB(book, token);
         router.push("/");
         router.refresh();
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_error) {
-      setError("Failed to edit book");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to edit book");
     } finally {
       setLoading(false);
     }
@@ -50,6 +58,11 @@ function BookPage({ params }: { params: { id: number } }) {
 
   const handleDeleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOwner) {
+      // Pengaman tambahan
+      setError("You do not have permission to delete this book.");
+      return;
+    }
     const confirmed = window.confirm(
       "Apakah Anda yakin ingin menghapus buku ini?",
     );
@@ -57,29 +70,81 @@ function BookPage({ params }: { params: { id: number } }) {
     setLoadingDelete(true);
     try {
       if (book) {
-        await deleteBookInDB(params.id);
+        const token = getAuthToken();
+        await deleteBookInDB(params.id, token);
         router.push("/");
         router.refresh();
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_error) {
-      setError("Failed to delete book");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete book");
     } finally {
       setLoadingDelete(false);
     }
   };
 
   useEffect(() => {
-    const fetchBook = async () => {
-      const fetchedBook = await getBookFromDB(params.id);
-      if (fetchedBook.data.message == "not found") {
+    const fetchBookAndCheckOwnership = async () => {
+      const token = getAuthToken(); // Ambil token
+      const fetchedBookResult = await getBookFromDB(params.id, token); // Kirim token
+
+      if (
+        fetchedBookResult.status !== 200 ||
+        !fetchedBookResult.data ||
+        fetchedBookResult.data.message === "not found"
+      ) {
         router.push("/");
+        return;
       }
-      setBook(fetchedBook.data);
+
+      const fetchedBook: IBook = fetchedBookResult.data;
+      const currentUserId = getUserIdFromToken();
+
+      if (fetchedBook.isPrivate && fetchedBook.ownerId !== currentUserId) {
+        router.push("/");
+        return;
+      }
+
+      if (fetchedBook.ownerId === currentUserId) {
+        setIsOwner(true);
+      }
+
+      setBook(fetchedBook);
     };
 
-    fetchBook();
+    fetchBookAndCheckOwnership();
   }, [params.id, router]);
+  // Tampilan read-only untuk non-pemilik (menggunakan form yang di-disable)
+  const readOnlyForm = (
+    <form
+      onSubmit={(e) => e.preventDefault()}
+      className="my-10 w-full max-w-lg mx-auto p-6 rounded-2xl bg-white/40 dark:bg-white/10 border border-white/30 dark:border-white/20 backdrop-blur-md shadow-xl transition-all"
+    >
+      <h2 className="text-3xl font-bold mb-6 text-center">{book?.title}</h2>
+      <div className="mb-4">
+        <label className="block font-semibold text-gray-800 dark:text-gray-200">
+          Author
+        </label>
+        <p className="w-full p-3 mt-2 ...">{book?.author}</p>
+      </div>
+      <div className="mb-4">
+        <label className="block font-semibold text-gray-800 dark:text-gray-200">
+          Price
+        </label>
+        <p className="w-full p-3 mt-2 ...">
+          {new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+          }).format(book?.price || 0)}
+        </p>
+      </div>
+      <div className="mb-6">
+        <label className="block font-semibold text-gray-800 dark:text-gray-200">
+          Description
+        </label>
+        <p className="w-full p-3 mt-2 ...">{book?.description}</p>
+      </div>
+    </form>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-zinc-900 dark:to-zinc-800 transition-colors duration-300">
@@ -90,7 +155,10 @@ function BookPage({ params }: { params: { id: number } }) {
         </div>
       )}
       <AuthRequiredWrapper>
-        {book ? (
+        {!book ? (
+          <div className="text-center text-gray-500 py-20">Loading...</div>
+        ) : isOwner ? (
+          // Jika user adalah pemilik, tampilkan form edit seperti kode asli Anda
           <div>
             <form
               onSubmit={handleEditSubmit}
@@ -175,6 +243,21 @@ function BookPage({ params }: { params: { id: number } }) {
                 />
               </div>
 
+              {/* Toggle Private */}
+              <div className="mb-6 flex items-center justify-between">
+                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                  Keep this book private?
+                </span>
+                <Toggle
+                  enabled={book.isPrivate ?? false}
+                  setEnabled={(value) =>
+                    setBook((prev) =>
+                      prev ? { ...prev, isPrivate: value } : null,
+                    )
+                  }
+                />
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-3 bg-btn-color text-white rounded-xl hover:bg-text-hover transition duration-300 shadow-md"
@@ -198,7 +281,8 @@ function BookPage({ params }: { params: { id: number } }) {
             </form>
           </div>
         ) : (
-          <div className="text-center text-gray-500 py-20">Loading...</div>
+          // Jika bukan pemilik, tampilkan detail read-only
+          readOnlyForm
         )}
       </AuthRequiredWrapper>
     </div>

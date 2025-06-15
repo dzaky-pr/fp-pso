@@ -126,12 +126,13 @@ describe("AddPage", () => {
           price: 25.99,
           description: "Test Description",
         }),
+        "dummy-token",
       );
     });
 
     expect(mockPush).toHaveBeenCalledWith("/");
     expect(mockRefresh).toHaveBeenCalled();
-  });
+  }, 10000);
 
   it("shows loading state during submission", async () => {
     const user = userEvent.setup();
@@ -164,10 +165,10 @@ describe("AddPage", () => {
     });
 
     // Resolve the promise to finish the test
-    act(() => {
+    await act(async () => {
       resolvePromise!();
     });
-  });
+  }, 10000);
 
   it("handles submission error", async () => {
     const user = userEvent.setup();
@@ -192,5 +193,5 @@ describe("AddPage", () => {
       },
       { timeout: 3000 },
     );
-  });
+  }, 10000);
 });

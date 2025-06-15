@@ -86,3 +86,17 @@ export const isAuthenticated = () => {
   const token = getAuthToken();
   return !!token;
 };
+
+export const getUserIdFromToken = (): string | null => {
+  const token = getAuthToken();
+  if (!token) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.userId || null;
+  } catch (error) {
+    console.error("Failed to decode token:", error);
+    return null;
+  }
+};
