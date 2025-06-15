@@ -102,12 +102,15 @@ export const getUserIdFromToken = (): string | null => {
 };
 
 export const getUserEmailFromToken = (): string | null => {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") {
+    return null;
+  }
   const token = getAuthToken();
   if (!token) {
     return null;
   }
   try {
+    // Decode payload dari token JWT
     const payload = JSON.parse(atob(token.split(".")[1]));
     return payload.email || null;
   } catch (error) {

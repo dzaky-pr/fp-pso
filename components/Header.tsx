@@ -4,15 +4,17 @@ import { getUserEmailFromToken, isAuthenticated, logout } from "@/actions/auth";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { FiMenu, FiMoon, FiSun, FiX } from "react-icons/fi";
+import { useEffect, useRef, useState } from "react";
+import { FiChevronDown, FiMenu, FiMoon, FiSun, FiX } from "react-icons/fi";
 
 function Header() {
   const [isDark, setIsDark] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const router = useRouter();
+  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -27,12 +29,24 @@ function Header() {
     }
 
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMenuOpen(false);
+      if (window.innerWidth >= 768) setIsMenuOpen(false);
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileOpen(false);
       }
     };
+
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const toggleTheme = () => {
@@ -47,13 +61,13 @@ function Header() {
     setLoggedIn(false);
     setUserEmail(null);
     setIsMenuOpen(false);
+    setIsProfileOpen(false);
     router.push("/login");
   };
 
   return (
     <header className="relative py-3.5 px-4 md:px-10 shadow-md dark:shadow-slate-800 transition-colors duration-300">
       <div className="flex justify-between items-center">
-        {/* Logo dan Judul */}
         <h1 className="flex items-center text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
           <Image
             src="/image/library.png"
@@ -68,8 +82,7 @@ function Header() {
           </Link>
         </h1>
 
-        {/* Menu Navigasi untuk Desktop */}
-        <nav className="hidden md:flex items-center space-x-6">
+        <nav className="hidden md:flex items-center space-x-4">
           {loggedIn && (
             <>
               <Link
@@ -91,32 +104,10 @@ function Header() {
               </Link>
             </>
           )}
-          {loggedIn ? (
-            <div className="flex items-center space-x-4">
-              <span
-                className="text-sm text-gray-600 dark:text-gray-300 hidden lg:inline"
-                title={userEmail || ""}
-              >
-                {userEmail}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition duration-200"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Link href="/login">
-              <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
-                Login
-              </button>
-            </Link>
-          )}
           <button
             onClick={toggleTheme}
             aria-label="Toggle Theme"
-            className="ml-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {isDark ? (
               <FiSun size={20} className="text-yellow-400" />
@@ -124,9 +115,49 @@ function Header() {
               <FiMoon size={20} className="text-gray-700" />
             )}
           </button>
+
+          <div className="relative" ref={profileRef}>
+            {loggedIn ? (
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700"
+              >
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate max-w-[150px]">
+                  {userEmail}
+                </span>
+                <FiChevronDown
+                  className={`transition-transform duration-200 ${
+                    isProfileOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            ) : (
+              <Link href="/login">
+                <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
+                  Login
+                </button>
+              </Link>
+            )}
+
+            {isProfileOpen && loggedIn && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-800 rounded-md shadow-lg py-1 z-50 border dark:border-zinc-700">
+                <div className="px-4 py-3 border-b dark:border-zinc-600">
+                  <p className="text-sm text-gray-500">Signed in as</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {userEmail}
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-700"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </nav>
 
-        {/* Tombol Hamburger untuk Mobile */}
         <div className="flex items-center md:hidden">
           <button
             onClick={toggleTheme}
@@ -139,17 +170,24 @@ function Header() {
               <FiMoon size={20} className="text-gray-700" />
             )}
           </button>
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2"
-            aria-label="Open menu"
-          >
-            {isMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-          </button>
+          {loggedIn ? (
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2"
+              aria-label="Open menu"
+            >
+              {isMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            </button>
+          ) : (
+            <Link href="/login">
+              <button className="py-2 px-3 text-sm bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
+                Login
+              </button>
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Dropdown Menu untuk Mobile */}
       {isMenuOpen && (
         <nav className="md:hidden mt-4 flex flex-col items-center space-y-2 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg absolute top-full left-4 right-4 z-50">
           {loggedIn ? (
