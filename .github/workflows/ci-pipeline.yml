@@ -90,6 +90,7 @@ jobs:
         run: |
           mkdir -p artifact
           cp -r .next/static .next/standalone/.next
+          cp -r public .next/standalone
           cp -r .next/standalone artifact/
 
       - name: 📦 Zip Artifacts
