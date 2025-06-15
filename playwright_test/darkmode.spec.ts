@@ -31,9 +31,7 @@ test.describe("Dark Mode Smoke Tests", () => {
 
       // 2) referensi elemen <html> dan tombol toggle
       const html = page.locator("html");
-      const toggle = page.locator(
-        'button[aria-label="toggle-theme-desktop"], button[aria-label="toggle-theme-mobile"]',
-      );
+      const toggle = page.locator('button[aria-label="toggle-theme-desktop"]');
 
       // 3) pastikan default *tidak* dark
       await expect(html).not.toHaveClass(/dark/);
