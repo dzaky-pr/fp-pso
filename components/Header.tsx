@@ -1,6 +1,6 @@
 "use client";
 
-import { isAuthenticated, logout } from "@/actions/auth";
+import { getUserEmailFromToken, isAuthenticated, logout } from "@/actions/auth";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,8 @@ import { FiMenu, FiMoon, FiSun, FiX } from "react-icons/fi";
 function Header() {
   const [isDark, setIsDark] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // State untuk menu mobile
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -18,9 +19,13 @@ function Header() {
     const isInitiallyDark = saved === "dark";
     document.documentElement.classList.toggle("dark", isInitiallyDark);
     setIsDark(isInitiallyDark);
-    setLoggedIn(isAuthenticated());
 
-    // Tutup menu jika layar di-resize menjadi lebih besar
+    const authStatus = isAuthenticated();
+    setLoggedIn(authStatus);
+    if (authStatus) {
+      setUserEmail(getUserEmailFromToken());
+    }
+
     const handleResize = () => {
       if (window.innerWidth >= 768) {
         setIsMenuOpen(false);
@@ -40,7 +45,8 @@ function Header() {
   const handleLogout = () => {
     logout();
     setLoggedIn(false);
-    setIsMenuOpen(false); // Tutup menu setelah logout
+    setUserEmail(null);
+    setIsMenuOpen(false);
     router.push("/login");
   };
 
@@ -56,7 +62,10 @@ function Header() {
             alt="Book Library"
             className="mr-2 md:mr-3"
           />
-          <Link href="/">Book Library</Link>
+          <Link href="/">
+            <span className="hidden sm:inline">Book Library</span>
+            <span className="sm:hidden">Library</span>
+          </Link>
         </h1>
 
         {/* Menu Navigasi untuk Desktop */}
@@ -83,12 +92,20 @@ function Header() {
             </>
           )}
           {loggedIn ? (
-            <button
-              onClick={handleLogout}
-              className="py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition duration-200"
-            >
-              Logout
-            </button>
+            <div className="flex items-center space-x-4">
+              <span
+                className="text-sm text-gray-600 dark:text-gray-300 hidden lg:inline"
+                title={userEmail || ""}
+              >
+                {userEmail}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition duration-200"
+              >
+                Logout
+              </button>
+            </div>
           ) : (
             <Link href="/login">
               <button className="py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">
@@ -98,8 +115,8 @@ function Header() {
           )}
           <button
             onClick={toggleTheme}
-            aria-label="toggle-theme-desktop"
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            aria-label="Toggle Theme"
+            className="ml-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {isDark ? (
               <FiSun size={20} className="text-yellow-400" />
@@ -113,7 +130,7 @@ function Header() {
         <div className="flex items-center md:hidden">
           <button
             onClick={toggleTheme}
-            aria-label="toggle-theme-mobile"
+            aria-label="Toggle Theme"
             className="p-2 mr-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {isDark ? (
@@ -134,39 +151,43 @@ function Header() {
 
       {/* Dropdown Menu untuk Mobile */}
       {isMenuOpen && (
-        <nav className="md:hidden mt-4 flex flex-col items-center space-y-4 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg absolute top-full left-0 right-0 z-50">
-          {loggedIn && (
+        <nav className="md:hidden mt-4 flex flex-col items-center space-y-2 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg absolute top-full left-4 right-4 z-50">
+          {loggedIn ? (
             <>
+              <div className="w-full text-left pb-3 mb-2 border-b dark:border-zinc-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Signed in as
+                </p>
+                <p className="font-semibold truncate">{userEmail}</p>
+              </div>
               <Link
                 href="/"
                 onClick={() => setIsMenuOpen(false)}
-                className="w-full text-center p-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-700"
+                className="w-full text-left p-3 rounded hover:bg-gray-100 dark:hover:bg-zinc-700"
               >
                 Home
               </Link>
               <Link
                 href="/my-books"
                 onClick={() => setIsMenuOpen(false)}
-                className="w-full text-center p-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-700"
+                className="w-full text-left p-3 rounded hover:bg-gray-100 dark:hover:bg-zinc-700"
               >
                 My Books
               </Link>
               <Link
                 href={"/add"}
                 onClick={() => setIsMenuOpen(false)}
-                className="w-full text-center p-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-700"
+                className="w-full text-left p-3 rounded hover:bg-gray-100 dark:hover:bg-zinc-700"
               >
                 Add Book
               </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full mt-2 py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition duration-200"
+              >
+                Logout
+              </button>
             </>
-          )}
-          {loggedIn ? (
-            <button
-              onClick={handleLogout}
-              className="w-full py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition duration-200"
-            >
-              Logout
-            </button>
           ) : (
             <Link href="/login" className="w-full">
               <button className="w-full py-2 px-4 bg-btn-color text-white rounded hover:bg-text-hover transition duration-200">

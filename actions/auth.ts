@@ -100,3 +100,18 @@ export const getUserIdFromToken = (): string | null => {
     return null;
   }
 };
+
+export const getUserEmailFromToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+  const token = getAuthToken();
+  if (!token) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.email || null;
+  } catch (error) {
+    console.error("Failed to decode token for email:", error);
+    return null;
+  }
+};
