@@ -31,8 +31,8 @@ export default function Home() {
       <Header />
 
       <main className="py-12 px-6 md:px-12 lg:px-24">
-        <div className="flex items-center justify-between mb-10">
-          <h2 className="text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">
+        <div className="flex items-center justify-between mb-6  md:mb-10">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">
             Explore Our Collections
           </h2>
         </div>
