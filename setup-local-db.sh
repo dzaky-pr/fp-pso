@@ -98,68 +98,37 @@ echo "🧹 Deleting existing 'users' table (if any)..."
 aws dynamodb delete-table --table-name users --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager > /dev/null 2>&1
 sleep 2
 
+# Create users table
 echo "📊 Creating 'users' table..."
+# PERBAIKAN: Definisikan GSI dalam satu baris untuk menghindari karakter aneh
+GSI_JSON='[{"IndexName":"EmailIndex","KeySchema":[{"AttributeName":"email","KeyType":"HASH"}],"Projection":{"ProjectionType":"ALL"}}]'
 aws dynamodb create-table \
     --table-name users \
-    --attribute-definitions \
-        AttributeName=userId,AttributeType=S \
-        AttributeName=email,AttributeType=S \
-    --key-schema \
-        AttributeName=userId,KeyType=HASH \
+    --attribute-definitions AttributeName=userId,AttributeType=S AttributeName=email,AttributeType=S \
+    --key-schema AttributeName=userId,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
-    --global-secondary-indexes "$(cat <<EOF
-[
-    {
-        "IndexName": "EmailIndex",
-        "KeySchema": [
-            { "AttributeName": "email", "KeyType": "HASH" }
-        ],
-        "Projection": {
-            "ProjectionType": "ALL"
-        },
-        "ProvisionedThroughput": {
-            "ReadCapacityUnits": 1,
-            "WriteCapacityUnits": 1
-        }
-    }
-]
-EOF
-)" \
+    --global-secondary-indexes "$GSI_JSON" \
     --endpoint-url http://localhost:8000 \
     --region ap-southeast-1 \
     --no-cli-pager
 
 if [ $? -eq 0 ]; then
     echo "✅ Table 'users' created successfully!"
-else
-    echo "⚠️  Table 'users' might already exist or there was an error"
 fi
 
+# Menambahkan data pengguna
 echo "👤 Adding sample user data..."
 
-# Pengguna 1: test@example.com | password: password123
-aws dynamodb put-item \
-    --table-name users \
-    --item '{
-        "userId": {"S": "user-1-system"},
-        "email": {"S": "test@example.com"},
-        "passwordHash": {"S": "$2a$10$fPL.O090a1gS.N51gO9jauRjJ0i6I.gB/s3QODtSIoBdwv2kOPfUe"},
-        "createdAt": {"N": "'$(date +%s)'"},
-        "updatedAt": {"N": "'$(date +%s)'"}
-    }' \
-    --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager
+HASH='$2b$10$8rgKC.qgWUMr8lGbcPhzH.Kah94PbyVyRa3G8CUB88OqsiixbBGhC'
+TIMESTAMP=$(date +%s)
 
-# Pengguna 2: user@example.com | password: password123
-aws dynamodb put-item \
-    --table-name users \
-    --item '{
-        "userId": {"S": "user-2-system"},
-        "email": {"S": "user@example.com"},
-        "passwordHash": {"S": "$2a$10$fPL.O090a1gS.N51gO9jauRjJ0i6I.gB/s3QODtSIoBdwv2kOPfUe"},
-        "createdAt": {"N": "'$(date +%s)'"},
-        "updatedAt": {"N": "'$(date +%s)'"}
-    }' \
-    --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager
+# Buat JSON string untuk setiap pengguna menggunakan variabel
+USER1_JSON="{ \"userId\": {\"S\": \"user-1-system\"}, \"email\": {\"S\": \"test@example.com\"}, \"passwordHash\": {\"S\": \"$HASH\"}, \"createdAt\": {\"N\": \"$TIMESTAMP\"}, \"updatedAt\": {\"N\": \"$TIMESTAMP\"} }"
+USER2_JSON="{ \"userId\": {\"S\": \"user-2-system\"}, \"email\": {\"S\": \"user@example.com\"}, \"passwordHash\": {\"S\": \"$HASH\"}, \"createdAt\": {\"N\": \"$TIMESTAMP\"}, \"updatedAt\": {\"N\": \"$TIMESTAMP\"} }"
+
+# Gunakan variabel JSON tersebut dalam perintah put-item
+aws dynamodb put-item --table-name users --item "$USER1_JSON" --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager
+aws dynamodb put-item --table-name users --item "$USER2_JSON" --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager
 
 echo "✅ Sample user data added!"
 

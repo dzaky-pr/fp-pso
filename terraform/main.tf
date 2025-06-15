@@ -661,14 +661,14 @@ resource "aws_instance" "production" {
 # User Seeding
 resource "aws_dynamodb_item" "user_1" {
   table_name = aws_dynamodb_table.users_table.name
-  hash_key   = aws_dynamodb_table.users_table.hash_key # Mengambil hash_key dari definisi tabel
+  hash_key   = aws_dynamodb_table.users_table.hash_key
 
   item = jsonencode({
-    userId = { S = "user-1-system" },
-    email = { S = "test@example.com" },
-    passwordHash = { S = "$2a$10$fPL.O090a1gS.N51gO9jauRjJ0i6I.gB/s3QODtSIoBdwv2kOPfUe" },
-    createdAt = { N = "1718442000" }, # Menggunakan Unix timestamp statis
-    updatedAt = { N = "1718442000" }
+    userId       = { S = "user-1-system" },
+    email        = { S = "test@example.com" },
+    passwordHash = { S = "$2b$10$8rgKC.qgWUMr8lGbcPhzH.Kah94PbyVyRa3G8CUB88OqsiixbBGhC" },
+    createdAt    = { N = "1718442000" },
+    updatedAt    = { N = "1718442000" }
   })
 }
 
@@ -677,11 +677,11 @@ resource "aws_dynamodb_item" "user_2" {
   hash_key   = aws_dynamodb_table.users_table.hash_key
 
   item = jsonencode({
-    userId = { S = "user-2-system" },
-    email = { S = "user@example.com" },
-    passwordHash = { S = "$2a$10$fPL.O090a1gS.N51gO9jauRjJ0i6I.gB/s3QODtSIoBdwv2kOPfUe" },
-    createdAt = { N = "1718442000" },
-    updatedAt = { N = "1718442000" }
+    userId       = { S = "user-2-system" },
+    email        = { S = "user@example.com" },
+    passwordHash = { S = "$2b$10$8rgKC.qgWUMr8lGbcPhzH.Kah94PbyVyRa3G8CUB88OqsiixbBGhC" },
+    createdAt    = { N = "1718442000" },
+    updatedAt    = { N = "1718442000" }
   })
 }
 

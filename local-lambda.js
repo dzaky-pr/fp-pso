@@ -144,39 +144,34 @@ const registerUser = async (email, password) => {
 };
 
 const loginUser = async (email, password) => {
-  // Cari pengguna berdasarkan email menggunakan Global Secondary Index (GSI)
   const result = await dynamo.send(
     new QueryCommand({
       TableName: usersTableName,
-      IndexName: "EmailIndex", // Pastikan nama GSI sesuai dengan yang didefinisikan di Terraform
+      IndexName: "EmailIndex",
       KeyConditionExpression: "email = :email",
       ExpressionAttributeValues: {
         ":email": email,
       },
-      Limit: 1, // --- TAMBAHKAN INI UNTUK EFISIENSI ---
+      Limit: 1,
     }),
   );
 
   const user = result.Items && result.Items[0];
 
   if (!user) {
-    throw new Error("Invalid credentials"); // Email tidak ditemukan
+    throw new Error("Invalid credentials");
   }
 
-  // Verifikasi password
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
   if (!isPasswordValid) {
-    throw new Error("Invalid credentials"); // Password salah
+    throw new Error("Invalid credentials");
   }
 
-  // Buat JSON Web Token (JWT)
   const token = jwt.sign(
     { userId: user.userId, email: user.email },
     JWT_SECRET,
-    {
-      expiresIn: "1h", // Token akan kedaluwarsa dalam 1 jam
-    },
+    { expiresIn: "1h" },
   );
 
   return {
@@ -184,7 +179,7 @@ const loginUser = async (email, password) => {
     email: user.email,
     token,
     message: "Login successful",
-  }; // --- PERBAIKI RETURN VALUE ---
+  };
 };
 
 const deleteUserByEmail = async (email) => {
