@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // Baca URL dari environment, fallback ke localhost jika tidak diset
 const uniqueSuffix = Date.now();
 const email = `e2eCRUDuser-${uniqueSuffix}@example.com`;
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const BASE_URL = process.env.SMOKE_UI_URL || "http://localhost:3000";
 
 let bookAdded = false;
 let bookEdited = false;
@@ -173,7 +173,10 @@ test.describe("Log Out and delete account", () => {
     // Navigasi ke halaman About
     await page.goto(`${BASE_URL}/`);
     // Verifikasi judul halaman
-    const logOutButton = page.locator('button:has-text("Logout")');
+    const menuButton = page.locator('button[aria-label="Toggle Profile Menu"]');
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+    const logOutButton = page.locator('button:has-text("Log Out")');
     await expect(logOutButton).toBeVisible();
     // Klik tombol Log Out
     await logOutButton.click();

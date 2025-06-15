@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const BASE_URL = process.env.SMOKE_UI_URL || "http://localhost:3000";
 const email1 = "test@example.com";
 const email2 = "user@example.com";
 const title1 = "The Great Gatsby";

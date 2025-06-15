@@ -106,7 +106,7 @@ function Header() {
           )}
           <button
             onClick={toggleTheme}
-            aria-label="Toggle Theme"
+            aria-label="Toggle Theme Website"
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {isDark ? (
@@ -119,6 +119,7 @@ function Header() {
           <div className="relative" ref={profileRef}>
             {loggedIn ? (
               <button
+                aria-label="Toggle Profile Menu"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700"
               >
@@ -151,7 +152,7 @@ function Header() {
                   onClick={handleLogout}
                   className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-700"
                 >
-                  Logout
+                  Log Out
                 </button>
               </div>
             )}
@@ -161,7 +162,7 @@ function Header() {
         <div className="flex items-center md:hidden">
           <button
             onClick={toggleTheme}
-            aria-label="Toggle Theme"
+            aria-label="Toogle Theme Mobile"
             className="p-2 mr-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {isDark ? (
