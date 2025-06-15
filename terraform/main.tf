@@ -322,6 +322,24 @@ resource "aws_apigatewayv2_route" "delete_book" {
   target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
 }
 
+resource "aws_apigatewayv2_route" "login" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "POST /login"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "register" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "POST /register"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "delete_account" {
+  api_id    = aws_apigatewayv2_api.api_books.id
+  route_key = "DELETE /account"
+  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
+}
+
 resource "aws_apigatewayv2_route" "health" {
   api_id    = aws_apigatewayv2_api.api_books.id
   route_key = "GET /health"
@@ -356,6 +374,30 @@ resource "aws_lambda_permission" "allow_api_health" {
   function_name = aws_lambda_function.book_library_lambda.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/health"
+}
+
+resource "aws_lambda_permission" "allow_api_login" {
+  statement_id  = "AllowLoginAPIInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.book_library_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/login"
+}
+
+resource "aws_lambda_permission" "allow_api_register" {
+  statement_id  = "AllowRegisterAPIInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.book_library_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/register"
+}
+
+resource "aws_lambda_permission" "allow_api_delete_account" {
+  statement_id  = "AllowDeleteAccountAPIInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.book_library_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/account"
 }
 
 # --- SNS Topic for Alerts ---

@@ -152,6 +152,28 @@ const loginUser = async (email, password) => {
   }; // --- PERBAIKI RETURN VALUE ---
 };
 
+const deleteUserByEmail = async (email) => {
+  // Cari userId berdasarkan email
+  const result = await dynamo.send(
+    new QueryCommand({
+      TableName: usersTableName,
+      IndexName: "EmailIndex",
+      KeyConditionExpression: "email = :email",
+      ExpressionAttributeValues: { ":email": email },
+      Limit: 1,
+    }),
+  );
+  const user = result.Items && result.Items[0];
+  if (!user) throw new Error("User not found");
+  await dynamo.send(
+    new DeleteCommand({
+      TableName: usersTableName,
+      Key: { userId: user.userId },
+    }),
+  );
+  return { message: "Account deleted by email" };
+};
+
 /* ──────────────────────────
    Authentication Middleware (NEW)
 ────────────────────────── */
@@ -232,6 +254,12 @@ const handler = async (event) => {
       case "POST /login": {
         const { email, password } = JSON.parse(requestBody);
         body = await loginUser(email, password);
+        break;
+      }
+
+      case "DELETE /account": {
+        const { email } = JSON.parse(event.body);
+        body = await deleteUserByEmail(email);
         break;
       }
 

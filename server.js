@@ -34,6 +34,8 @@ const convertToAPIGatewayEvent = (req) => {
     routeKey = "POST /register";
   } else if (method === "POST" && path === "/api/login") {
     routeKey = "POST /login";
+  } else if (method === "DELETE" && path === "/api/account") {
+    routeKey = "DELETE /account";
   }
 
   // Extract path parameters
@@ -107,6 +109,8 @@ app.listen(PORT, () => {
   console.log(`   POST   http://localhost:${PORT}/api/login`);
   // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
+  console.log(`   DELETE http://localhost:${PORT}/api/account`);
   // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log();
 });
