@@ -28,16 +28,6 @@ jobs:
           node-version: 18
           cache: "npm"
 
-      - name: 💾 Cache Next.js Build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            ${{ github.workspace }}/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-
       - name: ⛅ Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -78,7 +68,7 @@ jobs:
       - name: 📦 Install Dependencies With Audit
         run: |
           # Install with audit and cache optimization
-          npm ci --prefer-offline  --cache ~/.npm
+          npm ci
 
       - name: 🔍 Lint & Typecheck
         run: |
@@ -126,52 +116,120 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: 📄 Backup latest.txt to previous.txt (if it exists)
+      - name: ☁ Upload Artifact Checksum to S3
+        run: |
+          aws s3 cp artifact.zip.sha256 s3://${{ steps.tf_output.outputs.artifact_bucket }}/${{ github.sha }}.sha256
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: 📄 Backup latest.txt to previous.txt (safe check)
         run: |
           set +e
           aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt ./latest.txt
-          if [ -f latest.txt ]; then
-            echo "✅ Found latest.txt, backing up to previous.txt"
+
+          if [ ! -f latest.txt ]; then
+            echo "ℹ️ latest.txt not found. Skipping backup."
+            exit 0
+          fi
+
+          VERSION=$(cat latest.txt | xargs)
+
+          # Check if the file exists in S3 and has a reasonable size (>1MB)
+          FILE_SIZE=$(aws s3api head-object --bucket ${{ steps.tf_output.outputs.artifact_bucket }} --key $VERSION --query ContentLength --output text 2>/dev/null)
+
+          if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1048576 ]; then
+            echo "✅ Valid artifact found: $VERSION ($FILE_SIZE bytes)"
             aws s3 cp ./latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/previous.txt
           else
-            echo "ℹ️ No latest.txt found, skipping backup."
+            echo "::warning::Artifact in latest.txt is missing or too small ($FILE_SIZE bytes). Skipping backup."
           fi
         env:
           AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: 📄 Write and Upload latest.txt
+      - name: 📄 Write and Upload latest.txt (safe update)
         run: |
-          echo "${{ github.sha }}.zip" > latest.txt
-          aws s3 cp latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt
-          echo "✅ latest.txt now points to ${{ github.sha }}.zip"
+          VERSION="${{ github.sha }}.zip"
+
+          # Pastikan artifact benar-benar ada di S3 dan ukurannya ≥ 1MB
+          FILE_SIZE=$(aws s3api head-object \
+            --bucket ${{ steps.tf_output.outputs.artifact_bucket }} \
+            --key "$VERSION" \
+            --query ContentLength \
+            --output text 2>/dev/null)
+
+          if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1048576 ]; then
+            echo "✅ Verified uploaded artifact: $VERSION ($FILE_SIZE bytes)"
+            
+            # Tulis dan upload latest.txt
+            echo "$VERSION" > latest.txt
+            aws s3 cp latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt
+            echo "✅ latest.txt now points to $VERSION"
+          else
+            echo "::error::Artifact $VERSION is missing or too small ($FILE_SIZE bytes). Skipping latest.txt update."
+            exit 1
+          fi
         env:
           AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ steps.tf_output.outputs.ci_secret_access_key }}
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: 🧹 Clean Up Old Artifacts in S3
+      - name: 🧹 Clean Up Old Artifacts in S3 (Safe Version)
         run: |
+          # Unduh latest.txt dan previous.txt jika ada
           aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/latest.txt latest.txt || true
           aws s3 cp s3://${{ steps.tf_output.outputs.artifact_bucket }}/previous.txt previous.txt || true
 
+          # Ambil nama file dari isi latest.txt dan previous.txt
           LATEST=$(cat latest.txt 2>/dev/null | xargs || echo "")
           PREVIOUS=$(cat previous.txt 2>/dev/null | xargs || echo "")
 
-          echo "Keeping: [$LATEST] and [$PREVIOUS]"
+          echo "Found in latest.txt: $LATEST"
+          echo "Found in previous.txt: $PREVIOUS"
 
+          # Validasi eksistensi dan ukuran file latest.zip dan previous.zip di S3
+          VALID_ZIPS=()
+
+          for ZIPVAR in "$LATEST" "$PREVIOUS"; do
+            if [[ "$ZIPVAR" =~ \.zip$ ]]; then
+              FILE_SIZE=$(aws s3api head-object --bucket ${{ steps.tf_output.outputs.artifact_bucket }} --key "$ZIPVAR" --query ContentLength --output text 2>/dev/null)
+              if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1048576 ]; then
+                echo "✅ Valid artifact: $ZIPVAR ($FILE_SIZE bytes)"
+                VALID_ZIPS+=("$ZIPVAR")
+              else
+                echo "::warning::Skipping invalid or small artifact: $ZIPVAR ($FILE_SIZE bytes)"
+              fi
+            fi
+          done
+
+          echo "Keeping artifacts: ${VALID_ZIPS[*]}"
+
+          # Ambil semua file .zip dari bucket
           aws s3 ls s3://${{ steps.tf_output.outputs.artifact_bucket }}/ | awk '{print $4}' | grep '\.zip$' > all_zips.txt || true
 
+          # Hapus file yang tidak termasuk dalam VALID_ZIPS
           if [ -f all_zips.txt ]; then
             while read ZIPFILE; do
-              if [[ -n "$ZIPFILE" && "$ZIPFILE" != "$LATEST" && "$ZIPFILE" != "$PREVIOUS" ]]; then
-                echo "🗑 Deleting $ZIPFILE"
+              KEEP=false
+              for VALID in "${VALID_ZIPS[@]}"; do
+                if [ "$ZIPFILE" = "$VALID" ]; then
+                  KEEP=true
+                  break
+                fi
+              done
+
+              if [ "$KEEP" = false ]; then
+                echo "🗑 Deleting unused artifact: $ZIPFILE"
                 aws s3 rm s3://${{ steps.tf_output.outputs.artifact_bucket }}/$ZIPFILE
               else
-                echo "✅ Keeping $ZIPFILE"
+                echo "✅ Keeping artifact: $ZIPFILE"
               fi
             done < all_zips.txt
+          else
+            echo "ℹ️ No .zip files found in bucket."
           fi
         env:
           AWS_ACCESS_KEY_ID: ${{ steps.tf_output.outputs.ci_access_key_id }}
