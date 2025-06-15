@@ -27,8 +27,7 @@ const client = new DynamoDBClient({
 const dynamo = DynamoDBDocumentClient.from(client);
 const tablename = process.env.TABLE_NAME || "books";
 const usersTableName = process.env.USERS_TABLE_NAME || "users";
-const JWT_SECRET =
-  process.env.JWT_SECRET || "purnomovirgiawangusyantovalentino";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /* ──────────────────────────
    CRUD helper functions

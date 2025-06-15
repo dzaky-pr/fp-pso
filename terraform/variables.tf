@@ -71,3 +71,9 @@ variable "lambda_code_path" {
   type        = string
   default     = "./lambda.js" # Assumes lambda.js is in the same directory
 }
+
+variable "jwt_secret" {
+  description = "The secret key for signing JWTs"
+  type        = string
+  sensitive   = true
+}

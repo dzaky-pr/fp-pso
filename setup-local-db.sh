@@ -135,6 +135,34 @@ else
     echo "⚠️  Table 'users' might already exist or there was an error"
 fi
 
+echo "👤 Adding sample user data..."
+
+# Pengguna 1: test@example.com | password: password123
+aws dynamodb put-item \
+    --table-name users \
+    --item '{
+        "userId": {"S": "user-1-system"},
+        "email": {"S": "test@example.com"},
+        "passwordHash": {"S": "$2a$10$fPL.O090a1gS.N51gO9jauRjJ0i6I.gB/s3QODtSIoBdwv2kOPfUe"},
+        "createdAt": {"N": "'$(date +%s)'"},
+        "updatedAt": {"N": "'$(date +%s)'"}
+    }' \
+    --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager
+
+# Pengguna 2: user@example.com | password: password123
+aws dynamodb put-item \
+    --table-name users \
+    --item '{
+        "userId": {"S": "user-2-system"},
+        "email": {"S": "user@example.com"},
+        "passwordHash": {"S": "$2a$10$fPL.O090a1gS.N51gO9jauRjJ0i6I.gB/s3QODtSIoBdwv2kOPfUe"},
+        "createdAt": {"N": "'$(date +%s)'"},
+        "updatedAt": {"N": "'$(date +%s)'"}
+    }' \
+    --endpoint-url http://localhost:8000 --region ap-southeast-1 --no-cli-pager
+
+echo "✅ Sample user data added!"
+
 # Start DynamoDB Admin UI
 echo "🎨 Starting DynamoDB Admin UI..."
 docker-compose up -d dynamodb-admin

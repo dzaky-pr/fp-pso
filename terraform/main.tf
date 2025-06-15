@@ -275,6 +275,8 @@ resource "aws_lambda_function" "book_library_lambda" {
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.books_table.name # Pass table name as env var (optional, as it's hardcoded in lambda.js) [cite: 31]
+      USERS_TABLE_NAME = aws_dynamodb_table.users_table.name
+      JWT_SECRET       = var.jwt_secret  
     }
   }
 
@@ -656,6 +658,32 @@ resource "aws_instance" "production" {
   ]
 }
 
+# User Seeding
+resource "aws_dynamodb_item" "user_1" {
+  table_name = aws_dynamodb_table.users_table.name
+  hash_key   = aws_dynamodb_table.users_table.hash_key # Mengambil hash_key dari definisi tabel
+
+  item = jsonencode({
+    userId = { S = "user-1-system" },
+    email = { S = "test@example.com" },
+    passwordHash = { S = "$2a$10$fPL.O090a1gS.N51gO9jauRjJ0i6I.gB/s3QODtSIoBdwv2kOPfUe" },
+    createdAt = { N = "1718442000" }, # Menggunakan Unix timestamp statis
+    updatedAt = { N = "1718442000" }
+  })
+}
+
+resource "aws_dynamodb_item" "user_2" {
+  table_name = aws_dynamodb_table.users_table.name
+  hash_key   = aws_dynamodb_table.users_table.hash_key
+
+  item = jsonencode({
+    userId = { S = "user-2-system" },
+    email = { S = "user@example.com" },
+    passwordHash = { S = "$2a$10$fPL.O090a1gS.N51gO9jauRjJ0i6I.gB/s3QODtSIoBdwv2kOPfUe" },
+    createdAt = { N = "1718442000" },
+    updatedAt = { N = "1718442000" }
+  })
+}
 
 # resource "null_resource" "trigger_ci_pipeline" {
 #   provisioner "local-exec" {
