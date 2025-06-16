@@ -11,6 +11,13 @@ module.exports = {
     "<rootDir>/__tests__/**/*.{js,jsx,ts,tsx}",
     "<rootDir>/**/*.test.{js,jsx,ts,tsx}",
   ],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "/terraform/",
+    "/.next/",
+    "/build/",
+    "/dist/",
+  ],
   transform: {
     "^.+\\.(ts|tsx)$": [
       "ts-jest",
