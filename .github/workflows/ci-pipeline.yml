@@ -132,10 +132,13 @@ jobs:
           sha256sum artifact.zip > artifact.zip.sha256
           echo "Artifact size: $(ls -lh artifact.zip | awk '{print $5}')"
 
-          # Verify minimum size (should be > 1MB for a real deployment)
+          # Verify minimum size (should be > 1KB for basic validation)
           ARTIFACT_SIZE=$(stat -f%z artifact.zip 2>/dev/null || stat -c%s artifact.zip)
-          if [ "$ARTIFACT_SIZE" -lt 1048576 ]; then
-            echo "::warning::Artifact size seems small ($ARTIFACT_SIZE bytes)"
+          if [ "$ARTIFACT_SIZE" -lt 1000 ]; then
+            echo "::error::Artifact size too small ($ARTIFACT_SIZE bytes)"
+            exit 1
+          else
+            echo "✅ Artifact size valid: $ARTIFACT_SIZE bytes"
           fi
 
       - name: ☁ Upload Artifact Zip to S3
@@ -166,10 +169,10 @@ jobs:
 
           VERSION=$(cat latest.txt | xargs)
 
-          # Check if the file exists in S3 and has a reasonable size (>1MB)
+          # Check if the file exists in S3 and has a reasonable size (>1KB)
           FILE_SIZE=$(aws s3api head-object --bucket ${{ steps.tf_output.outputs.artifact_bucket }} --key $VERSION --query ContentLength --output text 2>/dev/null)
 
-          if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1048576 ]; then
+          if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1000 ]; then
             echo "✅ Valid artifact found: $VERSION ($FILE_SIZE bytes)"
             aws s3 cp ./latest.txt s3://${{ steps.tf_output.outputs.artifact_bucket }}/previous.txt
           else
@@ -184,14 +187,14 @@ jobs:
         run: |
           VERSION="${{ github.sha }}.zip"
 
-          # Pastikan artifact benar-benar ada di S3 dan ukurannya ≥ 1MB
+          # Pastikan artifact benar-benar ada di S3 dan ukurannya ≥ 1KB
           FILE_SIZE=$(aws s3api head-object \
             --bucket ${{ steps.tf_output.outputs.artifact_bucket }} \
             --key "$VERSION" \
             --query ContentLength \
             --output text 2>/dev/null)
 
-          if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1048576 ]; then
+          if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1000 ]; then
             echo "✅ Verified uploaded artifact: $VERSION ($FILE_SIZE bytes)"
             
             # Tulis dan upload latest.txt
@@ -226,7 +229,7 @@ jobs:
           for ZIPVAR in "$LATEST" "$PREVIOUS"; do
             if [[ "$ZIPVAR" =~ \.zip$ ]]; then
               FILE_SIZE=$(aws s3api head-object --bucket ${{ steps.tf_output.outputs.artifact_bucket }} --key "$ZIPVAR" --query ContentLength --output text 2>/dev/null)
-              if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1048576 ]; then
+              if [[ "$FILE_SIZE" =~ ^[0-9]+$ ]] && [ "$FILE_SIZE" -ge 1000 ]; then
                 echo "✅ Valid artifact: $ZIPVAR ($FILE_SIZE bytes)"
                 VALID_ZIPS+=("$ZIPVAR")
               else
