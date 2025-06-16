@@ -84,28 +84,92 @@ jobs:
             AWS_REGION="${{ env.AWS_REGION }}"
             VERSION="${{ steps.version.outputs.version }}"
 
+            echo "🚀 Starting deployment for version: $VERSION"
+            
+            # Stop existing PM2 process (if any)
+            pm2 stop book-library || echo "No existing process to stop"
+            pm2 delete book-library || echo "No existing process to delete"
+
             # Clean and prepare deploy folder
-            sudo chown -R ubuntu:ubuntu ~/deploy
+            sudo chown -R ubuntu:ubuntu ~/deploy || true
+            sudo chown -R ubuntu:ubuntu ~/artifact.zip || true
             rm -rf ~/deploy
+            rm -rf ~/artifact.zip
             mkdir -p ~/deploy
 
+            echo "📦 Downloading artifact from S3..."
             # Download the ZIP artifact and its checksum from S3
             aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
             aws s3 cp s3://$ARTIFACT_BUCKET/${VERSION%.zip}.sha256 ~/artifact.zip.sha256 --region $AWS_REGION
 
+            echo "🔍 Validating artifact checksum..."
             # Validate artifact.zip against its checksum
-            sha256sum -c ~/artifact.zip.sha256
+            if sha256sum -c ~/artifact.zip.sha256; then
+              echo "✅ Checksum validation passed"
+            else
+              echo "❌ Checksum validation failed"
+              exit 1
+            fi
 
+            echo "📂 Extracting artifact..."
             # Unzip it to the deploy folder
             unzip ~/artifact.zip -d ~/deploy
 
-            cd ~/deploy/artifact/standalone
-            sudo chmod +rwx server.js
-            sudo chmod +rwx package.json
+            echo "🔍 Analyzing deployment structure..."
+            # Find the actual app structure
+            find ~/deploy -name "*.js" -o -name "package.json" | head -10
 
-            # Restart PM2 with the new code
-            pm2 restart book-library || pm2 start server.js --name book-library
+            # Navigate to the correct directory based on artifact structure
+            if [ -d "/home/ubuntu/deploy/artifact/standalone" ] && [ -f "/home/ubuntu/deploy/artifact/standalone/server.js" ]; then
+              APP_PATH="/home/ubuntu/deploy/artifact/standalone"
+              SERVER_FILE="server.js"
+            elif [ -d "/home/ubuntu/deploy/artifact" ] && [ -f "/home/ubuntu/deploy/artifact/server.js" ]; then
+              APP_PATH="/home/ubuntu/deploy/artifact"
+              SERVER_FILE="server.js"
+            elif [ -f "/home/ubuntu/deploy/server.js" ]; then
+              APP_PATH="/home/ubuntu/deploy"
+              SERVER_FILE="server.js"
+            elif [ -f "/home/ubuntu/deploy/app.js" ]; then
+              APP_PATH="/home/ubuntu/deploy"
+              SERVER_FILE="app.js"
+            else
+              echo "❌ No server file found! Available files:"
+              find /home/ubuntu/deploy -type f -name "*.js" | head -20
+              exit 1
+            fi
+
+            echo "🎯 Using app path: $APP_PATH"
+            echo "🎯 Using server file: $SERVER_FILE"
+
+            # Navigate to app directory
+            cd $APP_PATH
+
+            # Install dependencies if package.json exists
+            if [ -f "package.json" ]; then
+              echo "📦 Installing dependencies..."
+              npm install --production --silent
+            fi
+
+            # Set proper permissions
+            chmod +x $SERVER_FILE
+            chmod +r package.json || true
+
+            # Set environment variables
+            export NODE_ENV=staging
+            export PORT=3000
+
+            echo "🚀 Starting application with PM2..."
+            # Start with PM2
+            pm2 start $SERVER_FILE --name book-library --env staging
             pm2 save
+
+            echo "📊 PM2 Status:"
+            pm2 status
+            
+            echo "📝 Application logs:"
+            pm2 logs book-library --lines 5 --nostream || echo "No logs available yet"
+
+            echo "✅ Staging deployment completed successfully"
 
       - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
         id: staging_smoke_tests
@@ -133,7 +197,7 @@ jobs:
         env:
           SMOKE_UI_URL: http://${{ steps.tf_output.outputs.staging_public_ip }}:3000
 
-      - name: 🖥 Deploy to EC2 via SSH Script
+      - name: 🖥 Deploy to EC2 Production via SSH Script
         if: steps.staging_smoke_tests.outcome == 'success'
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -145,36 +209,92 @@ jobs:
             AWS_REGION="${{ env.AWS_REGION }}"
             VERSION="${{ steps.version.outputs.version }}"
 
-            # Stop running process
-            pm2 stop book-library
+            echo "🚀 Starting PRODUCTION deployment for version: $VERSION"
+            
+            # Stop existing PM2 process (if any)
+            pm2 stop book-library || echo "No existing process to stop"
+            pm2 delete book-library || echo "No existing process to delete"
 
             # Clean and prepare deploy folder
-            sudo chown -R ubuntu:ubuntu ~/deploy
-            sudo chown -R ubuntu:ubuntu ~/artifact.zip
+            sudo chown -R ubuntu:ubuntu ~/deploy || true
+            sudo chown -R ubuntu:ubuntu ~/artifact.zip || true
             rm -rf ~/deploy
-            rm -rf artifact.zip
+            rm -rf ~/artifact.zip
             mkdir -p ~/deploy
 
-            # Download the ZIP artifact from S3
+            echo "📦 Downloading artifact from S3..."
+            # Download the ZIP artifact and its checksum from S3
             aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
-
-            # Download the checksum file
             aws s3 cp s3://$ARTIFACT_BUCKET/${VERSION%.zip}.sha256 ~/artifact.zip.sha256 --region $AWS_REGION
 
+            echo "🔍 Validating artifact checksum..."
             # Validate artifact.zip against its checksum
-            sha256sum -c ~/artifact.zip.sha256
+            if sha256sum -c ~/artifact.zip.sha256; then
+              echo "✅ Checksum validation passed"
+            else
+              echo "❌ Checksum validation failed"
+              exit 1
+            fi
 
+            echo "📂 Extracting artifact..."
             # Unzip it to the deploy folder
             unzip ~/artifact.zip -d ~/deploy
 
-            cd ~/deploy/artifact/standalone
-            sudo chmod +rwx server.js
+            echo "🔍 Analyzing deployment structure..."
+            # Find the actual app structure
+            find ~/deploy -name "*.js" -o -name "package.json" | head -10
 
-            sleep 5
+            # Navigate to the correct directory based on artifact structure
+            if [ -d "/home/ubuntu/deploy/artifact/standalone" ] && [ -f "/home/ubuntu/deploy/artifact/standalone/server.js" ]; then
+              APP_PATH="/home/ubuntu/deploy/artifact/standalone"
+              SERVER_FILE="server.js"
+            elif [ -d "/home/ubuntu/deploy/artifact" ] && [ -f "/home/ubuntu/deploy/artifact/server.js" ]; then
+              APP_PATH="/home/ubuntu/deploy/artifact"
+              SERVER_FILE="server.js"
+            elif [ -f "/home/ubuntu/deploy/server.js" ]; then
+              APP_PATH="/home/ubuntu/deploy"
+              SERVER_FILE="server.js"
+            elif [ -f "/home/ubuntu/deploy/app.js" ]; then
+              APP_PATH="/home/ubuntu/deploy"
+              SERVER_FILE="app.js"
+            else
+              echo "❌ No server file found! Available files:"
+              find /home/ubuntu/deploy -type f -name "*.js" | head -20
+              exit 1
+            fi
 
-            # Restart PM2 with the new code
-            pm2 restart book-library --update-env || pm2 start server.js --name book-library
+            echo "🎯 Using app path: $APP_PATH"
+            echo "🎯 Using server file: $SERVER_FILE"
+
+            # Navigate to app directory
+            cd $APP_PATH
+
+            # Install dependencies if package.json exists
+            if [ -f "package.json" ]; then
+              echo "📦 Installing dependencies..."
+              npm install --production --silent
+            fi
+
+            # Set proper permissions
+            chmod +x $SERVER_FILE
+            chmod +r package.json || true
+
+            # Set environment variables for production
+            export NODE_ENV=production
+            export PORT=3000
+
+            echo "🚀 Starting application with PM2..."
+            # Start with PM2
+            pm2 start $SERVER_FILE --name book-library --env production
             pm2 save
+
+            echo "📊 PM2 Status:"
+            pm2 status
+            
+            echo "📝 Application logs:"
+            pm2 logs book-library --lines 5 --nostream || echo "No logs available yet"
+
+            echo "✅ Production deployment completed successfully"
 
       - name: 🧪 Run Playwright Smoke Tests (UI, Dark Mode, Search)
         id: production_smoke_tests
