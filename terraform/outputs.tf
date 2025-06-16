@@ -113,3 +113,25 @@ output "production_public_dns" {
 output "ci_trigger_status" {
   value = "CI/CD Pipeline trigger added after infra provisioning 🚀"
 }
+
+# --- CloudWatch Dashboard Outputs ---
+output "cloudwatch_dashboard_infrastructure_url" {
+  description = "URL to the CloudWatch Dashboard for Infrastructure monitoring"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.book_library_dashboard.dashboard_name}"
+}
+
+output "cloudwatch_dashboard_application_url" {
+  description = "URL to the CloudWatch Dashboard for Application performance monitoring"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.book_library_app_dashboard.dashboard_name}"
+}
+
+output "monitoring_summary" {
+  description = "Summary of monitoring resources"
+  value = {
+    infrastructure_dashboard = aws_cloudwatch_dashboard.book_library_dashboard.dashboard_name
+    application_dashboard    = aws_cloudwatch_dashboard.book_library_app_dashboard.dashboard_name
+    lambda_log_group        = aws_cloudwatch_log_group.lambda_log_group.name
+    api_gateway_log_group   = aws_cloudwatch_log_group.api_gw_logs.name
+    sns_alerts_topic        = aws_sns_topic.lambda_errors.arn
+  }
+}

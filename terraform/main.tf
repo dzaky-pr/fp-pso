@@ -869,3 +869,278 @@ resource "aws_iam_user_policy_attachment" "cd_user_s3_backend" {
   user       = aws_iam_user.cd_user.name
   policy_arn = aws_iam_policy.s3_backend_access.arn
 }
+
+# ----------------
+# CloudWatch Dashboard for Book Library Infrastructure
+# ----------------
+
+resource "aws_cloudwatch_dashboard" "book_library_dashboard" {
+  dashboard_name = "BookLibrary-Infrastructure-${random_id.suffix.hex}"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.book_library_lambda.function_name],
+            [".", "Errors", ".", "."],
+            [".", "Invocations", ".", "."],
+            [".", "Throttles", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Lambda Function Metrics"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApiGateway", "Count", "ApiName", split("/", aws_apigatewayv2_api.api_books.api_endpoint)[2]],
+            [".", "Latency", ".", "."],
+            [".", "4XXError", ".", "."],
+            [".", "5XXError", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "API Gateway Metrics"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.books_table.name],
+            [".", "ConsumedWriteCapacityUnits", ".", "."],
+            [".", "UserErrors", ".", "."],
+            [".", "SystemErrors", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "DynamoDB Books Table"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 8
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.users_table.name],
+            [".", "ConsumedWriteCapacityUnits", ".", "."],
+            [".", "UserErrors", ".", "."],
+            [".", "SystemErrors", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "DynamoDB Users Table"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 16
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/EC2", "CPUUtilization", "InstanceId", aws_instance.staging.id],
+            [".", ".", ".", aws_instance.production.id],
+            ["AWS/EC2", "StatusCheckFailed", "InstanceId", aws_instance.staging.id],
+            [".", ".", ".", aws_instance.production.id]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "EC2 Instances Health"
+          period  = 300
+        }
+      },
+      {
+        type   = "log"
+        x      = 0
+        y      = 12
+        width  = 24
+        height = 6
+
+        properties = {
+          query   = "SOURCE '${aws_cloudwatch_log_group.lambda_log_group.name}'\n| fields @timestamp, @message, @requestId\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 20"
+          region  = var.aws_region
+          title   = "Lambda Error Logs (Last 20)"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 18
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/S3", "BucketSizeBytes", "BucketName", aws_s3_bucket.artifact.bucket, "StorageType", "StandardStorage"],
+            [".", "NumberOfObjects", ".", ".", ".", "AllStorageTypes"]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "S3 Artifact Bucket Usage"
+          period  = 86400
+        }
+      },
+      {
+        type   = "number"
+        x      = 12
+        y      = 18
+        width  = 6
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.book_library_lambda.function_name, { "stat": "Sum" }]
+          ]
+          view    = "singleValue"
+          region  = var.aws_region
+          title   = "Total Lambda Invocations (24h)"
+          period  = 86400
+        }
+      },
+      {
+        type   = "number"
+        x      = 18
+        y      = 18
+        width  = 6
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApiGateway", "Count", "ApiName", split("/", aws_apigatewayv2_api.api_books.api_endpoint)[2], { "stat": "Sum" }]
+          ]
+          view    = "singleValue"
+          region  = var.aws_region
+          title   = "Total API Requests (24h)"
+          period  = 86400
+        }
+      }
+    ]
+  })
+}
+
+# ----------------
+# CloudWatch Dashboard for Application Performance
+# ----------------
+
+resource "aws_cloudwatch_dashboard" "book_library_app_dashboard" {
+  dashboard_name = "BookLibrary-Application-${random_id.suffix.hex}"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 24
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.book_library_lambda.function_name, { "stat": "Average" }],
+            [".", ".", ".", ".", { "stat": "Maximum" }],
+            [".", ".", ".", ".", { "stat": "p95" }],
+            [".", ".", ".", ".", { "stat": "p99" }]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Lambda Response Time Distribution"
+          period  = 300
+          yAxis = {
+            left = {
+              min = 0
+            }
+          }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.book_library_lambda.function_name],
+            ["AWS/ApiGateway", "4XXError", "ApiName", split("/", aws_apigatewayv2_api.api_books.api_endpoint)[2]],
+            [".", "5XXError", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = true
+          region  = var.aws_region
+          title   = "Error Rate Analysis"
+          period  = 300
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", aws_lambda_function.book_library_lambda.function_name],
+            [".", "Throttles", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Lambda Concurrency & Throttling"
+          period  = 300
+        }
+      },
+      {
+        type   = "log"
+        x      = 0
+        y      = 12
+        width  = 24
+        height = 8
+
+        properties = {
+          query   = "SOURCE '${aws_cloudwatch_log_group.lambda_log_group.name}'\n| fields @timestamp, @message, @requestId, @duration\n| filter @type = \"REPORT\"\n| stats avg(@duration), max(@duration), min(@duration) by bin(5m)\n| sort @timestamp desc"
+          region  = var.aws_region
+          title   = "Lambda Performance Analysis (5-minute bins)"
+        }
+      }
+    ]
+  })
+}
