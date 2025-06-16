@@ -100,7 +100,7 @@ jobs:
             unzip ~/artifact.zip -d ~/deploy
 
             # Navigate to the standalone directory
-            cd ~/deploy/artifact/
+            cd ~/deploy/artifact/standalone
 
             # Set permissions
             sudo chmod +x server.js
@@ -166,7 +166,7 @@ jobs:
             unzip ~/artifact.zip -d ~/deploy
 
             # Navigate to the standalone directory
-            cd ~/deploy/artifact/
+            cd ~/deploy/artifact/standalone
 
             # Set permissions
             sudo chmod +x server.js
