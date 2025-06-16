@@ -141,8 +141,18 @@ jobs:
             # Install dependencies if package.json exists
             if [ -f "package.json" ]; then
               echo "📦 Installing dependencies..."
-              npm install --production --silent
+              # Add swap space for low-memory instances
+              sudo fallocate -l 1G /swapfile || true
+              sudo chmod 600 /swapfile || true
+              sudo mkswap /swapfile || true
+              sudo swapon /swapfile || true
+              
+              npm install --production
               echo "📦 Dependencies installed successfully"
+              
+              # Clean up swap
+              sudo swapoff /swapfile || true
+              sudo rm /swapfile || true
             else
               echo "⚠️ No package.json found, skipping dependency installation"
             fi
@@ -263,8 +273,18 @@ jobs:
             # Install dependencies if package.json exists
             if [ -f "package.json" ]; then
               echo "📦 Installing dependencies..."
-              npm install --production --silent
+              # Add swap space for low-memory instances
+              sudo fallocate -l 1G /swapfile || true
+              sudo chmod 600 /swapfile || true
+              sudo mkswap /swapfile || true
+              sudo swapon /swapfile || true
+              
+              npm install --production
               echo "📦 Dependencies installed successfully"
+              
+              # Clean up swap
+              sudo swapoff /swapfile || true
+              sudo rm /swapfile || true
             else
               echo "⚠️ No package.json found, skipping dependency installation"
             fi
