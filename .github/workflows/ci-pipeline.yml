@@ -98,13 +98,15 @@ jobs:
           if [ -d ".next/standalone" ]; then
             echo "✅ Found standalone build, copying..."
             
-            # Copy standalone build to artifact first
+            # Copy standalone build to artifact first (contains .next with BUILD_ID, manifests, etc.)
             cp -r .next/standalone/* artifact/
             
-            # Copy static files to the correct location within standalone .next
+            # Copy additional static files to the static subdirectory (DO NOT overwrite .next root)
             if [ -d ".next/static" ]; then
-              cp -r .next/static artifact/.next/
-              echo "✅ Copied static files to artifact/.next/"
+              # Ensure static directory exists and copy contents
+              mkdir -p artifact/.next/static
+              cp -r .next/static/* artifact/.next/static/
+              echo "✅ Copied static files to artifact/.next/static/"
             else
               echo "⚠️ No static files found"
             fi
@@ -131,6 +133,12 @@ jobs:
             ls -la artifact/.next/ || echo "❌ No .next directory in artifact"
             echo "🔍 Checking static files in .next:"
             ls -la artifact/.next/static/ || echo "❌ No static directory in .next"
+            echo "🔍 Checking BUILD_ID in .next:"
+            if [ -f "artifact/.next/BUILD_ID" ]; then
+              echo "✅ BUILD_ID found: $(cat artifact/.next/BUILD_ID)"
+            else
+              echo "❌ BUILD_ID missing - this will cause production build error!"
+            fi
           else
             echo "❌ No standalone build found - check next.config.mjs for output: 'standalone'"
             echo "Available files in .next:"
