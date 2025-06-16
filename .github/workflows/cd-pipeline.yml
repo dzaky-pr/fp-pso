@@ -85,7 +85,7 @@ jobs:
             VERSION="${{ steps.version.outputs.version }}"
 
             echo "🚀 Starting deployment for version: $VERSION"
-
+            
             # Stop existing PM2 process (if any)
             pm2 stop book-library || echo "No existing process to stop"
             pm2 delete book-library || echo "No existing process to delete"
@@ -119,21 +119,15 @@ jobs:
             # Find the actual app structure
             find ~/deploy -name "*.js" -o -name "package.json" | head -10
 
-            # Navigate to the correct directory based on artifact structure
-            if [ -d "/home/ubuntu/deploy/artifact/standalone" ] && [ -f "/home/ubuntu/deploy/artifact/standalone/server.js" ]; then
-              APP_PATH="/home/ubuntu/deploy/artifact/standalone"
-              SERVER_FILE="server.js"
-            elif [ -d "/home/ubuntu/deploy/artifact" ] && [ -f "/home/ubuntu/deploy/artifact/server.js" ]; then
+            # Navigate to the correct directory - should be ~/deploy/artifact/
+            if [ -f "/home/ubuntu/deploy/artifact/server.js" ]; then
               APP_PATH="/home/ubuntu/deploy/artifact"
               SERVER_FILE="server.js"
             elif [ -f "/home/ubuntu/deploy/server.js" ]; then
               APP_PATH="/home/ubuntu/deploy"
               SERVER_FILE="server.js"
-            elif [ -f "/home/ubuntu/deploy/app.js" ]; then
-              APP_PATH="/home/ubuntu/deploy"
-              SERVER_FILE="app.js"
             else
-              echo "❌ No server file found! Available files:"
+              echo "❌ No server.js found! Available files:"
               find /home/ubuntu/deploy -type f -name "*.js" | head -20
               exit 1
             fi
@@ -143,12 +137,6 @@ jobs:
 
             # Navigate to app directory
             cd $APP_PATH
-
-            # Install dependencies if package.json exists
-            if [ -f "package.json" ]; then
-              echo "📦 Installing dependencies..."
-              npm install --production --silent
-            fi
 
             # Set proper permissions
             chmod +x $SERVER_FILE
@@ -165,7 +153,7 @@ jobs:
 
             echo "📊 PM2 Status:"
             pm2 status
-
+            
             echo "📝 Application logs:"
             pm2 logs book-library --lines 5 --nostream || echo "No logs available yet"
 
@@ -210,7 +198,7 @@ jobs:
             VERSION="${{ steps.version.outputs.version }}"
 
             echo "🚀 Starting PRODUCTION deployment for version: $VERSION"
-
+            
             # Stop existing PM2 process (if any)
             pm2 stop book-library || echo "No existing process to stop"
             pm2 delete book-library || echo "No existing process to delete"
@@ -244,21 +232,15 @@ jobs:
             # Find the actual app structure
             find ~/deploy -name "*.js" -o -name "package.json" | head -10
 
-            # Navigate to the correct directory based on artifact structure
-            if [ -d "/home/ubuntu/deploy/artifact/standalone" ] && [ -f "/home/ubuntu/deploy/artifact/standalone/server.js" ]; then
-              APP_PATH="/home/ubuntu/deploy/artifact/standalone"
-              SERVER_FILE="server.js"
-            elif [ -d "/home/ubuntu/deploy/artifact" ] && [ -f "/home/ubuntu/deploy/artifact/server.js" ]; then
+            # Navigate to the correct directory - should be ~/deploy/artifact/
+            if [ -f "/home/ubuntu/deploy/artifact/server.js" ]; then
               APP_PATH="/home/ubuntu/deploy/artifact"
               SERVER_FILE="server.js"
             elif [ -f "/home/ubuntu/deploy/server.js" ]; then
               APP_PATH="/home/ubuntu/deploy"
               SERVER_FILE="server.js"
-            elif [ -f "/home/ubuntu/deploy/app.js" ]; then
-              APP_PATH="/home/ubuntu/deploy"
-              SERVER_FILE="app.js"
             else
-              echo "❌ No server file found! Available files:"
+              echo "❌ No server.js found! Available files:"
               find /home/ubuntu/deploy -type f -name "*.js" | head -20
               exit 1
             fi
@@ -268,12 +250,6 @@ jobs:
 
             # Navigate to app directory
             cd $APP_PATH
-
-            # Install dependencies if package.json exists
-            if [ -f "package.json" ]; then
-              echo "📦 Installing dependencies..."
-              npm install --production --silent
-            fi
 
             # Set proper permissions
             chmod +x $SERVER_FILE
@@ -290,7 +266,7 @@ jobs:
 
             echo "📊 PM2 Status:"
             pm2 status
-
+            
             echo "📝 Application logs:"
             pm2 logs book-library --lines 5 --nostream || echo "No logs available yet"
 
@@ -326,7 +302,9 @@ jobs:
         run: |
           echo "### ✅ Deployed successfully!" >> $GITHUB_STEP_SUMMARY
           echo "**Latest commit:** \`$(echo $GITHUB_SHA | cut -c1-7)\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Preview URL:** [${{ steps.tf_output.outputs.production_public_dns }}:3000](${{ steps.tf_output.outputs.production_public_dns }}:3000)" >> $GITHUB_STEP_SUMMARY
+          echo "**Production URL:** [http://${{ steps.tf_output.outputs.production_public_ip }}:3000](http://${{ steps.tf_output.outputs.production_public_ip }}:3000)" >> $GITHUB_STEP_SUMMARY
+          echo "**Staging URL:** [http://${{ steps.tf_output.outputs.staging_public_ip }}:3000](http://${{ steps.tf_output.outputs.staging_public_ip }}:3000)" >> $GITHUB_STEP_SUMMARY
+          echo "**API Gateway:** [${{ steps.tf_output.outputs.api_gateway_url }}](${{ steps.tf_output.outputs.api_gateway_url }})" >> $GITHUB_STEP_SUMMARY
 
       - name: 📄 Rollback to Previous Success Version
         if: steps.staging_smoke_tests.outcome == 'failure'

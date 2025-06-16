@@ -97,7 +97,7 @@ jobs:
           # Check if standalone build exists
           if [ -d ".next/standalone" ]; then
             echo "✅ Found standalone build, copying..."
-            # Copy standalone build
+            # Copy standalone build properly
             cp -r .next/static .next/standalone/.next/
             cp -r public .next/standalone/
             cp -r .next/standalone/* artifact/
@@ -106,51 +106,21 @@ jobs:
             if [ -f "artifact/server.js" ]; then
               chmod +x artifact/server.js
               echo "✅ Found server.js in artifact root"
+            else
+              echo "❌ server.js not found in standalone build!"
+              exit 1
             fi
           else
-            echo "❌ No standalone build found, falling back to regular build"
-            # Fallback: copy regular build
-            cp -r .next artifact/
-            cp -r public artifact/
-            cp package*.json artifact/
-            
-            # Create a simple server.js if not exists
-            if [ ! -f "artifact/server.js" ]; then
-              cat > artifact/server.js << 'SERVERJS'
-            const { createServer } = require('http');
-            const { parse } = require('url');
-            const next = require('next');
-
-            const dev = process.env.NODE_ENV !== 'production';
-            const hostname = '0.0.0.0';
-            const port = process.env.PORT || 3000;
-
-            const app = next({ dev, hostname, port });
-            const handle = app.getRequestHandler();
-
-            app.prepare().then(() => {
-              createServer(async (req, res) => {
-                try {
-                  const parsedUrl = parse(req.url, true);
-                  await handle(req, res, parsedUrl);
-                } catch (err) {
-                  console.error('Error occurred handling', req.url, err);
-                  res.statusCode = 500;
-                  res.end('internal server error');
-                }
-              }).listen(port, (err) => {
-                if (err) throw err;
-                console.log(\`> Ready on http://\${hostname}:\${port}\`);
-              });
-            });
-            SERVERJS
-              chmod +x artifact/server.js
-              echo "✅ Created fallback server.js"
-            fi
+            echo "❌ No standalone build found - check next.config.mjs for output: 'standalone'"
+            echo "Available files in .next:"
+            ls -la .next/
+            exit 1
           fi
           
           echo "📂 Final artifact structure:"
           find artifact -type f -name "*.js" -o -name "package.json" | head -10
+          echo "📁 Artifact directory size:"
+          du -sh artifact
 
       - name: 📦 Zip Artifacts
         run: |
