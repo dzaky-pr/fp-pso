@@ -83,75 +83,91 @@ jobs:
         run: |
           echo "AWS_API_URL=${{ steps.tf_output.outputs.api_gateway_url }}" >> .env
 
-      - name: 🏗 Build Next.js App
+      - name: 🏗 Build Next.js App (Frontend)
         run: npm run build
 
-      - name: 📦 Prepare Package Artifacts
+      - name: 📦 Prepare Frontend Artifacts for EC2
         run: |
-          echo "🔍 Analyzing build output..."
+          echo "🔍 Analyzing Next.js build output..."
           ls -la .next/
 
-          # Create artifact structure
+          # Create artifact structure for Next.js frontend
           mkdir -p artifact
 
-          # Check if standalone build exists
+          # Check if standalone build exists (Next.js with output: "standalone")
           if [ -d ".next/standalone" ]; then
-            echo "✅ Found standalone build, copying..."
+            echo "✅ Found Next.js standalone build, preparing for EC2..."
             
-            # Copy standalone build to artifact first (contains .next with BUILD_ID, manifests, etc.)
+            # Copy standalone build (server.js + required files)
             cp -r .next/standalone/* artifact/
             
-            # Copy additional static files to the static subdirectory (DO NOT overwrite .next root)
+            # Copy static files to proper location (.next/static is required for production)
             if [ -d ".next/static" ]; then
-              # Ensure static directory exists and copy contents
               mkdir -p artifact/.next/static
               cp -r .next/static/* artifact/.next/static/
               echo "✅ Copied static files to artifact/.next/static/"
-            else
-              echo "⚠️ No static files found"
             fi
             
-            # Copy public directory
-            cp -r public artifact/ || echo "⚠️ No public directory found"
+            # Copy public directory for assets
+            if [ -d "public" ]; then
+              cp -r public artifact/
+              echo "✅ Copied public directory"
+            fi
             
-            # Copy package.json and package-lock.json for dependencies (will overwrite standalone ones)
-            cp package.json artifact/ || echo "⚠️ No package.json found"
-            cp package-lock.json artifact/ || echo "⚠️ No package-lock.json found"
+            # Copy production package.json (standalone already has minimal package.json)
+            cp package.json artifact/package.original.json
+            echo "✅ Copied original package.json as backup"
             
             # Ensure server.js is executable
             if [ -f "artifact/server.js" ]; then
               chmod +x artifact/server.js
-              echo "✅ Found server.js in artifact root"
+              echo "✅ Next.js server.js ready for production"
             else
-              echo "❌ server.js not found in standalone build!"
+              echo "❌ server.js not found in standalone build"
               exit 1
             fi
             
-            echo "🔍 Verifying artifact structure:"
+            # Create PM2 ecosystem config for production deployment
+            cat > artifact/ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [
+    {
+      name: 'book-library-frontend',
+      script: './server.js',
+      instances: 1,
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        HOSTNAME: '0.0.0.0'
+      },
+      error_file: '/var/log/pm2/book-library-error.log',
+      out_file: '/var/log/pm2/book-library-out.log',
+      log_file: '/var/log/pm2/book-library-combined.log',
+      time: true
+    }
+  ]
+};
+EOF
+            echo "✅ Created PM2 ecosystem config for production"
+            
+            echo "🔍 Verifying standalone build structure:"
             ls -la artifact/
-            echo "🔍 Checking .next directory in artifact:"
-            ls -la artifact/.next/ || echo "❌ No .next directory in artifact"
-            echo "🔍 Checking static files in .next:"
-            ls -la artifact/.next/static/ || echo "❌ No static directory in .next"
-            echo "🔍 Checking BUILD_ID in .next:"
             if [ -f "artifact/.next/BUILD_ID" ]; then
               echo "✅ BUILD_ID found: $(cat artifact/.next/BUILD_ID)"
-            else
-              echo "❌ BUILD_ID missing - this will cause production build error!"
             fi
+            
           else
             echo "❌ No standalone build found - check next.config.mjs for output: 'standalone'"
-            echo "Available files in .next:"
-            ls -la .next/
             exit 1
           fi
 
-          echo "📂 Final artifact structure:"
-          find artifact -type f -name "*.js" -o -name "package.json" | head -10
+          echo "📂 Final frontend artifact structure:"
+          find artifact -type f \( -name "*.js" -o -name "package*.json" -o -name "ecosystem.config.js" \) | head -15
           echo "📁 Artifact directory size:"
           du -sh artifact
 
-      - name: 📦 Zip Artifacts
+      - name: 📦 Zip Frontend Artifacts
         run: |
           cd artifact && zip -r ../artifact.zip . -x "*.log" "*.tmp" "node_modules/*"
 

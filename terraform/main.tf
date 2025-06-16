@@ -737,19 +737,33 @@ resource "aws_instance" "staging" {
               #!/bin/bash -xe
               exec > /var/log/user-data.log 2>&1
 
+              # Update system and install basic packages
               apt update && apt install -y curl unzip
 
+              # Install Node.js 18.x (required for Next.js)
               curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
               sudo apt install -y nodejs
 
+              # Install AWS CLI v2 for S3 artifact access
               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
               unzip awscliv2.zip
               sudo ./aws/install
 
-              # Install PM2 globally
+              # Install PM2 globally for Next.js process management
               npm install -g pm2
 
-              mkdir -p deploy
+              # Create deploy directory for Next.js frontend
+              mkdir -p /home/ubuntu/deploy
+              chown ubuntu:ubuntu /home/ubuntu/deploy
+
+              # Create PM2 log directory
+              mkdir -p /var/log/pm2
+              chmod 755 /var/log/pm2
+
+              # Configure PM2 to auto-start on system boot
+              sudo -u ubuntu pm2 startup || true
+              
+              echo "✅ EC2 instance ready for Next.js frontend deployment"
               EOF
 }
 
