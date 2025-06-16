@@ -119,18 +119,18 @@ jobs:
 
             # Navigate to the deploy directory
             cd ~/deploy
-            
+
             # Check if this is a Next.js standalone build
             if [ -f "server.js" ]; then
               echo "✅ Found Next.js server.js"
               
               # Set up environment variables for frontend
               cat > .env.production.local << EOF
-NODE_ENV=production
-PORT=3000
-HOSTNAME=0.0.0.0
-AWS_API_URL=${{ steps.tf_output.outputs.api_gateway_url }}
-EOF
+              NODE_ENV=production
+              PORT=3000
+              HOSTNAME=0.0.0.0
+              AWS_API_URL=${{ steps.tf_output.outputs.api_gateway_url }}
+              EOF
               echo "✅ Created production environment file"
               
               # Install dependencies if package.json exists (for additional runtime deps)
@@ -171,7 +171,7 @@ EOF
           # Test frontend availability (Next.js app on port 3000)
           FRONTEND_URL="http://${{ steps.tf_output.outputs.staging_public_ip }}:3000"
           echo "� Testing frontend at: $FRONTEND_URL"
-          
+
           FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $FRONTEND_URL)
           if [ "$FRONTEND_STATUS" -ne 200 ]; then
             echo "❌ Frontend health check failed with status code: $FRONTEND_STATUS"
@@ -248,18 +248,18 @@ EOF
 
             # Navigate to the deploy directory
             cd ~/deploy
-            
+
             # Check if this is a Next.js standalone build
             if [ -f "server.js" ]; then
               echo "✅ Found Next.js server.js for production"
               
               # Set up environment variables for production frontend
               cat > .env.production.local << EOF
-NODE_ENV=production
-PORT=3000
-HOSTNAME=0.0.0.0
-AWS_API_URL=${{ steps.tf_output.outputs.api_gateway_url }}
-EOF
+              NODE_ENV=production
+              PORT=3000
+              HOSTNAME=0.0.0.0
+              AWS_API_URL=${{ steps.tf_output.outputs.api_gateway_url }}
+              EOF
               echo "✅ Created production environment file"
               
               # Install dependencies if package.json exists (for additional runtime deps)
@@ -301,7 +301,7 @@ EOF
           # Test production frontend availability (Next.js app on port 3000)
           PRODUCTION_FRONTEND_URL="http://${{ steps.tf_output.outputs.production_public_ip }}:3000"
           echo "🔍 Testing production frontend at: $PRODUCTION_FRONTEND_URL"
-          
+
           FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $PRODUCTION_FRONTEND_URL)
           if [ "$FRONTEND_STATUS" -ne 200 ]; then
             echo "❌ Production frontend health check failed with status code: $FRONTEND_STATUS"

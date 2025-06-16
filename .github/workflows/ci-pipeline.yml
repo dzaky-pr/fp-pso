@@ -129,26 +129,30 @@ jobs:
             
             # Create PM2 ecosystem config for production deployment
             cat > artifact/ecosystem.config.js << 'EOF'
-module.exports = {
-  apps: [
-    {
-      name: 'book-library-frontend',
-      script: './server.js',
-      instances: 1,
-      exec_mode: 'cluster',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000,
-        HOSTNAME: '0.0.0.0'
-      },
-      error_file: '/var/log/pm2/book-library-error.log',
-      out_file: '/var/log/pm2/book-library-out.log',
-      log_file: '/var/log/pm2/book-library-combined.log',
-      time: true
-    }
-  ]
-};
-EOF
+            module.exports = {
+              apps: [
+                {
+                  name: 'book-library-frontend',
+                  script: './server.js',
+                  instances: 1,
+                  exec_mode: 'cluster',
+                  env: {
+                    NODE_ENV: 'production',
+                    PORT: 3000,
+                    HOSTNAME: '0.0.0.0'
+                  },
+                  error_file: '/var/log/pm2/book-library-error.log',
+                  out_file: '/var/log/pm2/book-library-out.log',
+                  log_file: '/var/log/pm2/book-library-combined.log',
+                  time: true
+                }
+              ]
+            };
+            EOF
+            
+            # Create PM2 ecosystem config for production deployment
+            if [ -d "standalone" ]; then
+              cp -r standalone artifact/standalone      
             echo "✅ Created PM2 ecosystem config for production"
             
             echo "🔍 Verifying standalone build structure:"
