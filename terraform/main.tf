@@ -811,3 +811,61 @@ resource "aws_instance" "production" {
 
 # For production: spread across multiple AZs
 # subnet_id = data.aws_subnets.multi_az.ids[count.index % length(data.aws_subnets.multi_az.ids)]
+
+# ----------------
+# IAM Policy for Terraform S3 Backend Access
+# ----------------
+
+# S3 Backend Access Policy untuk CI/CD users
+resource "aws_iam_policy" "s3_backend_access" {
+  name        = "TerraformS3BackendAccess-${random_id.suffix.hex}"
+  description = "Policy for Terraform S3 backend access"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:GetBucketVersioning"
+        ]
+        Resource = [
+          "arn:aws:s3:::tf-state-bucket-booklibrary",
+          "arn:aws:s3:::tf-state-bucket-booklibrary/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:DescribeTable"
+        ]
+        Resource = "arn:aws:dynamodb:${var.aws_region}:*:table/terraform-locks"
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "TerraformS3BackendAccess-${random_id.suffix.hex}"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Attach S3 backend policy ke CI user
+resource "aws_iam_user_policy_attachment" "ci_user_s3_backend" {
+  user       = aws_iam_user.ci_user.name
+  policy_arn = aws_iam_policy.s3_backend_access.arn
+}
+
+# Attach S3 backend policy ke CD user  
+resource "aws_iam_user_policy_attachment" "cd_user_s3_backend" {
+  user       = aws_iam_user.cd_user.name
+  policy_arn = aws_iam_policy.s3_backend_access.arn
+}
