@@ -16,6 +16,146 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
+# --- Data Sources ---
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# --- VPC Infrastructure ---
+resource "aws_vpc" "book_library_vpc" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name        = "${var.project_name}-vpc-${random_id.suffix.hex}"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Internet Gateway
+resource "aws_internet_gateway" "book_library_igw" {
+  vpc_id = aws_vpc.book_library_vpc.id
+
+  tags = {
+    Name        = "${var.project_name}-igw-${random_id.suffix.hex}"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Public Subnets
+resource "aws_subnet" "public_subnets" {
+  count = length(var.availability_zones)
+
+  vpc_id                  = aws_vpc.book_library_vpc.id
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  availability_zone       = var.availability_zones[count.index]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name        = "${var.project_name}-public-subnet-${count.index + 1}-${random_id.suffix.hex}"
+    Type        = "Public"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Private Subnets
+resource "aws_subnet" "private_subnets" {
+  count = length(var.availability_zones)
+
+  vpc_id            = aws_vpc.book_library_vpc.id
+  cidr_block        = var.private_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index]
+
+  tags = {
+    Name        = "${var.project_name}-private-subnet-${count.index + 1}-${random_id.suffix.hex}"
+    Type        = "Private"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# NAT Gateway (untuk private subnets) - Optional untuk cost optimization
+resource "aws_eip" "nat_gateway_eip" {
+  count  = var.enable_nat_gateway ? length(var.availability_zones) : 0
+  domain = "vpc"
+
+  tags = {
+    Name        = "${var.project_name}-nat-eip-${count.index + 1}-${random_id.suffix.hex}"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+
+  depends_on = [aws_internet_gateway.book_library_igw]
+}
+
+resource "aws_nat_gateway" "nat_gateway" {
+  count = var.enable_nat_gateway ? length(var.availability_zones) : 0
+
+  allocation_id = aws_eip.nat_gateway_eip[count.index].id
+  subnet_id     = aws_subnet.public_subnets[count.index].id
+
+  tags = {
+    Name        = "${var.project_name}-nat-gateway-${count.index + 1}-${random_id.suffix.hex}"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+
+  depends_on = [aws_internet_gateway.book_library_igw]
+}
+
+# Route Table - Public
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.book_library_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.book_library_igw.id
+  }
+
+  tags = {
+    Name        = "${var.project_name}-public-rt-${random_id.suffix.hex}"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Route Table - Private
+resource "aws_route_table" "private_route_table" {
+  count  = var.enable_nat_gateway ? length(var.availability_zones) : 0
+  vpc_id = aws_vpc.book_library_vpc.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gateway[count.index].id
+  }
+
+  tags = {
+    Name        = "${var.project_name}-private-rt-${count.index + 1}-${random_id.suffix.hex}"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+# Route Table Associations - Public
+resource "aws_route_table_association" "public_subnet_associations" {
+  count = length(aws_subnet.public_subnets)
+
+  subnet_id      = aws_subnet.public_subnets[count.index].id
+  route_table_id = aws_route_table.public_route_table.id
+}
+
+# Route Table Associations - Private
+resource "aws_route_table_association" "private_subnet_associations" {
+  count = var.enable_nat_gateway ? length(aws_subnet.private_subnets) : 0
+
+  subnet_id      = aws_subnet.private_subnets[count.index].id
+  route_table_id = aws_route_table.private_route_table[count.index].id
+}
+
 # --- S3 Bucket ---
 resource "aws_s3_bucket" "artifact" {
   bucket = "${var.artifact_bucket_name}-${random_id.suffix.hex}"
@@ -45,10 +185,24 @@ resource "aws_s3_bucket" "lambda_bucket" {
   }
 }
 
+# Build Lambda function
+resource "null_resource" "build_lambda" {
+  triggers = {
+    lambda_source = filemd5("${path.module}/lambda.js")
+    package_json = filemd5("${path.module}/../package.json")
+  }
+
+  provisioner "local-exec" {
+    command = "cd ${path.module}/.. && npm run build:lambda"
+  }
+}
+
 data "archive_file" "lambda_zip" {
+  depends_on = [null_resource.build_lambda]
+  
   type        = "zip"
-  source_file  = var.lambda_code_path
-  output_path = "build/lambda_package.zip"
+  source_file = "${path.module}/dist/lambda.js"
+  output_path = "${path.module}/build/lambda_package.zip"
 }
 
 resource "aws_s3_object" "lambda_code_upload" {
@@ -79,9 +233,9 @@ resource "aws_dynamodb_table" "books_table" {
 
 # --- DynamoDB Table for Users ---
 resource "aws_dynamodb_table" "users_table" {
-  name             = "users"
-  billing_mode     = "PAY_PER_REQUEST"
-  hash_key         = "userId" 
+  name         = "users-${random_id.suffix.hex}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "userId" 
 
   attribute {
     name = "userId"
@@ -103,7 +257,7 @@ resource "aws_dynamodb_table" "users_table" {
   }
 
   tags = {
-    Name        = "users-table-book-library"
+    Name        = "users-table-book-library-${random_id.suffix.hex}"
     Environment = "Dev" # Sesuaikan dengan tag lingkungan Anda
     Project     = "BookLibrary"
   }
@@ -270,7 +424,7 @@ resource "aws_lambda_function" "book_library_lambda" {
 
   s3_bucket = aws_s3_bucket.lambda_bucket.id
   s3_key    = aws_s3_object.lambda_code_upload.key
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  source_code_hash = filebase64sha256("${path.module}/build/lambda_package.zip")
 
   environment {
     variables = {
@@ -354,18 +508,6 @@ resource "aws_apigatewayv2_route" "delete_book" {
   target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
 }
 
-resource "aws_apigatewayv2_route" "login" {
-  api_id    = aws_apigatewayv2_api.api_books.id
-  route_key = "POST /login"
-  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
-}
-
-resource "aws_apigatewayv2_route" "register" {
-  api_id    = aws_apigatewayv2_api.api_books.id
-  route_key = "POST /register"
-  target    = "integrations/${aws_apigatewayv2_integration.books_integration.id}"
-}
-
 resource "aws_apigatewayv2_route" "delete_account" {
   api_id    = aws_apigatewayv2_api.api_books.id
   route_key = "DELETE /account"
@@ -440,9 +582,6 @@ resource "aws_sns_topic_subscription" "email_alerts" {
   protocol  = "email"
   endpoint  = each.value
 
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
 }
 
 resource "aws_sns_topic" "lambda_errors" {
@@ -498,7 +637,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_status_check_failed" {
 resource "aws_security_group" "app_sg" {
   name        = "book-library-sg-${random_id.suffix.hex}"
   description = "Allow HTTP and SSH"
-  vpc_id      = var.vpc_id
+  vpc_id      = aws_vpc.book_library_vpc.id
 
   ingress {
     from_port   = 22
@@ -531,20 +670,6 @@ resource "aws_security_group" "app_sg" {
   }
 }
 
-# --- AWS AMI ---
-# data "aws_ami" "ubuntu_jammy" {
-#   most_recent = true
-#   owners      = ["099720109477"] # Canonical's official Ubuntu AMI owner ID
-
-#   filter {
-#     name   = "name"
-#     values = ["ubuntu/images/hvm-ssd/ubuntu-focal-22.04-amd64-server-*"]
-#   }
-#   filter {
-#     name   = "virtualization-type"
-#     values = ["hvm"]
-#   }
-# }
 
 resource "aws_iam_role" "ec2_role" {
   name = "book-library-ec2-role"
@@ -592,15 +717,19 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 
 # --- EC2 ---
 resource "aws_instance" "staging" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  key_name      = var.key_pair_name
-  security_groups = [aws_security_group.app_sg.name]
+  ami                         = var.ami_id
+  instance_type               = var.instance_type
+  key_name                    = var.key_pair_name
+  subnet_id                   = aws_subnet.public_subnets[0].id
+  vpc_security_group_ids      = [aws_security_group.app_sg.id]
+  associate_public_ip_address = true
 
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
-    Name = "book-library-staging-${random_id.suffix.hex}"
+    Name        = "book-library-staging-${random_id.suffix.hex}"
+    Environment = "staging"
+    Project     = var.project_name
   }
 
   user_data = <<-EOF
@@ -624,15 +753,19 @@ resource "aws_instance" "staging" {
 }
 
 resource "aws_instance" "production" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  key_name      = var.key_pair_name
-  security_groups = [aws_security_group.app_sg.name]
+  ami                         = var.ami_id
+  instance_type               = var.instance_type
+  key_name                    = var.key_pair_name
+  subnet_id                   = aws_subnet.public_subnets[1].id
+  vpc_security_group_ids      = [aws_security_group.app_sg.id]
+  associate_public_ip_address = true
 
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
-    Name = "book-library-production-${random_id.suffix.hex}"
+    Name        = "book-library-production-${random_id.suffix.hex}"
+    Environment = "production"
+    Project     = var.project_name
   }
 
   user_data = <<-EOF
@@ -658,45 +791,22 @@ resource "aws_instance" "production" {
   ]
 }
 
-# User Seeding
-resource "aws_dynamodb_item" "user_1" {
-  table_name = aws_dynamodb_table.users_table.name
-  hash_key   = aws_dynamodb_table.users_table.hash_key
-
-  item = jsonencode({
-    userId       = { S = "user-1-system" },
-    email        = { S = "test@example.com" },
-    passwordHash = { S = "$2b$10$8rgKC.qgWUMr8lGbcPhzH.Kah94PbyVyRa3G8CUB88OqsiixbBGhC" },
-    createdAt    = { N = "1718442000" },
-    updatedAt    = { N = "1718442000" }
-  })
-}
-
-resource "aws_dynamodb_item" "user_2" {
-  table_name = aws_dynamodb_table.users_table.name
-  hash_key   = aws_dynamodb_table.users_table.hash_key
-
-  item = jsonencode({
-    userId       = { S = "user-2-system" },
-    email        = { S = "user@example.com" },
-    passwordHash = { S = "$2b$10$8rgKC.qgWUMr8lGbcPhzH.Kah94PbyVyRa3G8CUB88OqsiixbBGhC" },
-    createdAt    = { N = "1718442000" },
-    updatedAt    = { N = "1718442000" }
-  })
-}
-
-# resource "null_resource" "trigger_ci_pipeline" {
-#   provisioner "local-exec" {
-#     command = <<EOT
-#       curl -X POST \
-#         -H "Authorization: token ${var.github_token}" \
-#         -H "Accept: application/vnd.github+json" \
-#         https://api.github.com/repos/${var.github_repo}/actions/workflows/ci-pipeline.yml/dispatches \
-#         -d '{"ref": "${var.github_branch}"}'
-#     EOT
-#   }
-
-#   depends_on = [
-#     aws_s3_bucket.artifact
-#   ]
+# Alternative: Multi-AZ deployment
+# data "aws_availability_zones" "available" {
+#   state = "available"
 # }
+
+# data "aws_subnets" "multi_az" {
+#   filter {
+#     name   = "vpc-id"
+#     values = [var.vpc_id]
+#   }
+#   
+#   filter {
+#     name   = "availability-zone"
+#     values = data.aws_availability_zones.available.names
+#   }
+# }
+
+# For production: spread across multiple AZs
+# subnet_id = data.aws_subnets.multi_az.ids[count.index % length(data.aws_subnets.multi_az.ids)]

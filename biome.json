@@ -14,7 +14,13 @@
       "**/.next",
       "**/node_modules",
       "**/package.json",
-      "**/pnpm-lock.yaml"
+      "**/pnpm-lock.yaml",
+      "**/dist",
+      "**/build",
+      "terraform/dist/**",
+      "terraform/build/**",
+      "terraform/lambda_build/**",
+      "**/*.zip"
     ]
   },
   "organizeImports": { "enabled": true },
@@ -97,7 +103,12 @@
     "ignore": [
       "**/.lintstagedrc.js",
       "**/tailwind.config.js",
-      "**/.prettierrc.js"
+      "**/.prettierrc.js",
+      "**/dist/**",
+      "**/build/**",
+      "terraform/dist/**",
+      "terraform/build/**",
+      "terraform/lambda_build/**"
     ]
   },
   "javascript": {

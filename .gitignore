@@ -1,58 +1,118 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
 
-# testing
+# Testing
 /coverage
+/test-results
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+.jest/
 
-# next.js
+# Next.js
 /.next/
 /out/
 
-# production
+# Production builds
 /build
 
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
+# Environment variables
 .env*.local
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+.env
 
 # Terraform
 .terraform/
-terraform.tfstate
-.terraform.tfstate.lock.info
 .terraform.lock.hcl
-terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.example.tfvars
 crash.log
-terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+tfplan
+terraform/tfplan
 
-# Lambda
+# Lambda build artifacts
+terraform/build/
+terraform/dist/
+terraform/lambda_build/
 lambda_package.zip
+*.zip
 
-# Husky
-.husky/
-
-# Dynamo DB Local
+# Docker and Local DB
 /local-dynamodb/*
 /docker/*
 
-# Playwright
-/test-results
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# ESLint and Biome cache
+.eslintcache
+.biome-cache/
+
+# Additional build tools cache
+.parcel-cache/
+.cache/
+.next/cache/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Temporary folders
+tmp/
+temp/
+
+# Vercel
+.vercel
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov

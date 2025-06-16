@@ -26,7 +26,8 @@
     "db:test": "node local-lambda.js",
     "api:start": "node server.js",
     "dev:full": "npm run db:start && concurrently \"npm run api:start\" \"npm run dev\"",
-    "smoke": "npx playwright test playwright_test/darkmode.spec.ts playwright_test/smoke.spec.ts playwright_test/search.spec.ts playwright_test/visibility.spec.ts --timeout=30000 --workers=4"
+    "smoke": "npx playwright test playwright_test/darkmode.spec.ts playwright_test/smoke.spec.ts playwright_test/search.spec.ts playwright_test/visibility.spec.ts --timeout=30000 --workers=4",
+    "build:lambda": "mkdir -p terraform/dist && esbuild terraform/lambda.js --bundle --platform=node --target=node18 --outfile=terraform/dist/lambda.js --external:@aws-sdk/* --minify"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.0.0",
@@ -39,7 +40,8 @@
     "next": "^14.2.29",
     "react": "^18",
     "react-dom": "^18",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -56,6 +58,7 @@
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
     "concurrently": "^9.1.2",
+    "esbuild": "^0.25.5",
     "eslint": "^8.57.0",
     "eslint-config-next": "15.3.3",
     "eslint-plugin-next": "^0.0.0",
