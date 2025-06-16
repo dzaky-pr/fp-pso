@@ -141,7 +141,8 @@ jobs:
             # Install dependencies if package.json exists
             if [ -f "package.json" ]; then
               echo "📦 Installing dependencies..."
-              npm ci --production --silent
+              npm install --production --silent
+              echo "📦 Dependencies installed successfully"
             else
               echo "⚠️ No package.json found, skipping dependency installation"
             fi
@@ -262,7 +263,8 @@ jobs:
             # Install dependencies if package.json exists
             if [ -f "package.json" ]; then
               echo "📦 Installing dependencies..."
-              npm ci --production --silent
+              npm install --production --silent
+              echo "📦 Dependencies installed successfully"
             else
               echo "⚠️ No package.json found, skipping dependency installation"
             fi

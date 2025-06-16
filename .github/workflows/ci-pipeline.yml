@@ -102,6 +102,10 @@ jobs:
             cp -r public .next/standalone/
             cp -r .next/standalone/* artifact/
             
+            # Copy package.json and package-lock.json for dependencies
+            cp package.json artifact/ || echo "⚠️ No package.json found"
+            cp package-lock.json artifact/ || echo "⚠️ No package-lock.json found"
+            
             # Ensure server.js is executable
             if [ -f "artifact/server.js" ]; then
               chmod +x artifact/server.js
