@@ -84,10 +84,14 @@ jobs:
             AWS_REGION="${{ env.AWS_REGION }}"
             VERSION="${{ steps.version.outputs.version }}"
 
-            # Clean and prepare deploy folder
-            sudo chown -R ubuntu:ubuntu ~/deploy
-            rm -rf ~/deploy
+            # Create deploy folder first
             mkdir -p ~/deploy
+
+            # Clean deploy folder
+            rm -rf ~/deploy/*
+
+            # Set ownership after folder exists
+            sudo chown -R ubuntu:ubuntu ~/deploy
 
             # Download the ZIP artifact from S3
             aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
@@ -95,9 +99,12 @@ jobs:
             # Unzip it to the deploy folder
             unzip ~/artifact.zip -d ~/deploy
 
-            cd deploy/artifact/standalone
-            sudo chmod +rwx server.js
-            sudo chmod +rwx package.json
+            # Navigate to the standalone directory
+            cd ~/deploy/artifact/
+
+            # Set permissions
+            sudo chmod +x server.js
+            sudo chmod +x package.json
 
             # Restart PM2 with the new code
             pm2 restart book-library || pm2 start server.js --name book-library
@@ -109,8 +116,6 @@ jobs:
         run: |
           echo "Waiting for server to be ready..."
           sleep 15
-
-          # exit 1
 
           # Simpan HTTP status code ke dalam variabel
           STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.tf_output.outputs.api_gateway_url }}/health)
@@ -142,14 +147,17 @@ jobs:
             VERSION="${{ steps.version.outputs.version }}"
 
             # Stop running process
-            pm2 stop book-library
+            pm2 stop book-library || true
 
-            # Clean and prepare deploy folder
-            sudo chown -R ubuntu:ubuntu ~/deploy
-            sudo chown -R ubuntu:ubuntu ~/artifact.zip
-            rm -rf ~/deploy
-            rm -rf artifact.zip
+            # Create deploy folder first
             mkdir -p ~/deploy
+
+            # Clean deploy folder and artifact
+            rm -rf ~/deploy/*
+            rm -f ~/artifact.zip
+
+            # Set ownership after folder exists
+            sudo chown -R ubuntu:ubuntu ~/deploy
 
             # Download the ZIP artifact from S3
             aws s3 cp s3://$ARTIFACT_BUCKET/$VERSION ~/artifact.zip --region $AWS_REGION
@@ -157,9 +165,13 @@ jobs:
             # Unzip it to the deploy folder
             unzip ~/artifact.zip -d ~/deploy
 
-            cd deploy/artifact/standalone
-            sudo chmod +rwx server.js
+            # Navigate to the standalone directory
+            cd ~/deploy/artifact/
 
+            # Set permissions
+            sudo chmod +x server.js
+
+            # Wait a moment before starting
             sleep 5
 
             # Restart PM2 with the new code
@@ -229,8 +241,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Stop Running pm2 Process
-            pm2 stop book-library
+            pm2 stop book-library || true
 
-            # Clean and prepare deploy folder
-            sudo chown -R ubuntu:ubuntu ~/deploy
+            # Clean deploy folder
             rm -rf ~/deploy
