@@ -77,7 +77,7 @@ function Header() {
             className="mr-2 md:mr-3"
           />
           <Link href="/">
-            <span className="hidden sm:inline">Book Library</span>
+            <span className="hidden sm:inline">Book Library Hai</span>
             <span className="sm:hidden">Library</span>
           </Link>
         </h1>
