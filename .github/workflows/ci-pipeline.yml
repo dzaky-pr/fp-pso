@@ -90,28 +90,29 @@ jobs:
         run: |
           echo "🔍 Analyzing build output..."
           ls -la .next/
-          
+
           # Create artifact structure
           mkdir -p artifact
-          
+
           # Check if standalone build exists
           if [ -d ".next/standalone" ]; then
             echo "✅ Found standalone build, copying..."
             
-            # Copy standalone build to artifact
+            # Copy standalone build to artifact first
             cp -r .next/standalone/* artifact/
             
-            # Ensure .next directory exists in artifact
-            mkdir -p artifact/.next
-            
-            # Copy static files and other necessary .next contents
-            cp -r .next/static artifact/.next/ || echo "⚠️ No static files found"
-            cp -r .next/cache artifact/.next/ || echo "⚠️ No cache found"
+            # Copy static files to the correct location within standalone .next
+            if [ -d ".next/static" ]; then
+              cp -r .next/static artifact/.next/
+              echo "✅ Copied static files to artifact/.next/"
+            else
+              echo "⚠️ No static files found"
+            fi
             
             # Copy public directory
             cp -r public artifact/ || echo "⚠️ No public directory found"
             
-            # Copy package.json and package-lock.json for dependencies
+            # Copy package.json and package-lock.json for dependencies (will overwrite standalone ones)
             cp package.json artifact/ || echo "⚠️ No package.json found"
             cp package-lock.json artifact/ || echo "⚠️ No package-lock.json found"
             
@@ -128,13 +129,15 @@ jobs:
             ls -la artifact/
             echo "🔍 Checking .next directory in artifact:"
             ls -la artifact/.next/ || echo "❌ No .next directory in artifact"
+            echo "🔍 Checking static files in .next:"
+            ls -la artifact/.next/static/ || echo "❌ No static directory in .next"
           else
             echo "❌ No standalone build found - check next.config.mjs for output: 'standalone'"
             echo "Available files in .next:"
             ls -la .next/
             exit 1
           fi
-          
+
           echo "📂 Final artifact structure:"
           find artifact -type f -name "*.js" -o -name "package.json" | head -10
           echo "📁 Artifact directory size:"
