@@ -138,6 +138,14 @@ jobs:
             # Navigate to app directory
             cd $APP_PATH
 
+            # Install dependencies if package.json exists
+            if [ -f "package.json" ]; then
+              echo "📦 Installing dependencies..."
+              npm ci --production --silent
+            else
+              echo "⚠️ No package.json found, skipping dependency installation"
+            fi
+
             # Set proper permissions
             chmod +x $SERVER_FILE
             chmod +r package.json || true
@@ -250,6 +258,14 @@ jobs:
 
             # Navigate to app directory
             cd $APP_PATH
+
+            # Install dependencies if package.json exists
+            if [ -f "package.json" ]; then
+              echo "📦 Installing dependencies..."
+              npm ci --production --silent
+            else
+              echo "⚠️ No package.json found, skipping dependency installation"
+            fi
 
             # Set proper permissions
             chmod +x $SERVER_FILE
