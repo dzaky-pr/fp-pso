@@ -101,7 +101,7 @@ variable "sns_topic_name" {
 variable "alert_emails" {
   description = "List of emails to alert to"
   type        = list(string)
-  default     = ["fransnicklaus101004@gmail.com", "darrell.valentino14@gmail.com", "titovirgiawan21@gmail.com", "dzakyfordev@gmail.con"]
+  default     = ["fransnicklaus101004@gmail.com", "darrell.valentino14@gmail.com", "titovirgiawan21@gmail.com", "dzakyfordev@gmail.com"]
 }
 
 variable "lambda_code_path" {
@@ -111,7 +111,12 @@ variable "lambda_code_path" {
 }
 
 variable "jwt_secret" {
-  description = "The secret key for signing JWTs"
+  description = "JWT secret key for authentication"
   type        = string
   sensitive   = true
+  
+  validation {
+    condition     = length(var.jwt_secret) >= 32
+    error_message = "JWT secret must be at least 32 characters long."
+  }
 }
