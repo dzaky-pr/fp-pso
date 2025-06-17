@@ -1,6 +1,7 @@
 import { getBooks } from "../../actions/data";
 
 global.fetch = jest.fn();
+global.alert = jest.fn(); // Mock window.alert agar tidak error di jsdom
 
 const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 

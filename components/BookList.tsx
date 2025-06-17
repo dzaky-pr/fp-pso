@@ -1,9 +1,6 @@
 "use client";
 
 import type { IBook } from "@/types";
-import Link from "next/link";
-import { useState } from "react";
-import { FiPlus } from "react-icons/fi";
 import BookCard from "./BookCard";
 // import SearchBar from "./SearchBar";
 
@@ -53,18 +50,18 @@ export default function BookList({ books }: { books: IBook[] }) {
         </Link>
       </div> */}
       {books.length === 0 ? (
-  <div className="text-center py-12">
-    <p className="text-gray-600 dark:text-gray-400 text-lg">
-      No books available. Add some books to get started!
-    </p>
-  </div>
-) : (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-    {books.map((book, idx) => (
-      <BookCard key={idx} book={book} />
-    ))}
-  </div>
-)}
+        <div className="text-center py-12">
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            No books available. Add some books to get started!
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          {books.map((book, idx) => (
+            <BookCard key={idx} book={book} />
+          ))}
+        </div>
+      )}
     </>
   );
 }
