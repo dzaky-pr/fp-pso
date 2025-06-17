@@ -81,7 +81,7 @@ const handler = async (event) => {
         const bookToDelete = await getBook(
           dynamo,
           tablename,
-          pathParameters.id
+          pathParameters.id,
         );
         if (
           !bookToDelete.ownerId ||
