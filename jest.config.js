@@ -33,15 +33,66 @@ module.exports = {
   transformIgnorePatterns: ["node_modules/(?!(.*\\.mjs$))"],
 
   /* ---------- Coverage settings ---------- */
-  collectCoverage: true, // aktifkan pelacakan coverage
-  coverageDirectory: "coverage", // semua output di ./coverage
-  coverageReporters: ["lcov", "text"], // LCOV untuk SonarCloud  ringkasan di log
+  collectCoverage: true,
+  coverageDirectory: "coverage",
+  coverageReporters: ["lcov", "text", "json", "html"],
   collectCoverageFrom: [
-    "<rootDir>/**/*.{js,jsx,ts,tsx}",
+    // Frontend components dan pages yang benar-benar perlu testing
+    "<rootDir>/components/**/*.{js,jsx,ts,tsx}",
+    "<rootDir>/app/**/*.{js,jsx,ts,tsx}",
+    "<rootDir>/actions/**/*.{js,jsx,ts,tsx}",
+    // Exclude patterns - more comprehensive
     "!**/*.d.ts",
     "!**/*.{test,spec}.{js,jsx,ts,tsx}",
     "!**/__tests__/**",
     "!<rootDir>/.next/**",
+    "!<rootDir>/node_modules/**",
+    "!<rootDir>/coverage/**",
     "!<rootDir>/terraform/**",
+    "!<rootDir>/shared/**", // Exclude shared utilities dari coverage
+    "!<rootDir>/playwright_test/**",
+    "!<rootDir>/test-results/**",
+    "!<rootDir>/__mocks__/**",
+    "!<rootDir>/jest.*.js",
+    "!<rootDir>/*.config.{js,ts,mjs}",
+    "!<rootDir>/server.js", // Exclude development server
+    "!<rootDir>/local-lambda.js", // Exclude local development files
+    "!<rootDir>/app/layout.tsx", // Layout tidak perlu test coverage tinggi
+    "!<rootDir>/app/globals.css",
+    "!<rootDir>/app/favicon.ico",
   ],
+  coveragePathIgnorePatterns: [
+    "/node_modules/",
+    "/.next/",
+    "/coverage/",
+    "/terraform/",
+    "/playwright_test/",
+    "/test-results/",
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 30,
+      functions: 35,
+      lines: 40,
+      statements: 40,
+    },
+    "./components/": {
+      branches: 40,
+      functions: 50,
+      lines: 50,
+      statements: 50,
+    },
+    "./actions/": {
+      branches: 9,
+      functions: 25,
+      lines: 25,
+      statements: 30,
+    },
+    "./app/": {
+      branches: 30,
+      functions: 35,
+      lines: 40,
+      statements: 40,
+    },
+  },
 };

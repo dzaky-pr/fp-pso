@@ -1,0 +1,38 @@
+# SonarQube ignore file - exclude files from analysis
+
+# Development and build files
+server.js
+local-lambda.js
+jest.setup.js
+*.config.js
+*.config.ts
+*.config.mjs
+
+# Terraform and deployment files
+terraform/**
+shared/**
+
+# Test and coverage files
+__tests__/**
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+coverage/**
+test-results/**
+playwright_test/**
+
+# Generated and dependency files
+.next/**
+node_modules/**
+dist/**
+build/**
+**/*.d.ts
+
+# Static assets
+app/globals.css
+app/favicon.ico
+app/layout.tsx
+public/**
+
+# Mock files
+__mocks__/**
