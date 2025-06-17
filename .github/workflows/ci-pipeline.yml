@@ -101,6 +101,7 @@ jobs:
       - name: 📦 Prepare Package Artifacts
         run: |
           mkdir -p artifact
+          cp -r public .next/standalone/public
           cp -r .next/static .next/standalone/.next
           cp -r .next/standalone artifact/
 
