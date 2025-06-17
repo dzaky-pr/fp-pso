@@ -66,7 +66,7 @@ function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white py-3.5 px-4 md:px-10 shadow-md dark:shadow-slate-800 transition-colors duration-300">
+    <header className="sticky top-0 z-50 bg-white dark:bg-zinc-800 py-3.5 px-4 md:px-10 shadow-md dark:shadow-zinc-700 transition-colors duration-300">
       <div className="flex justify-between items-center">
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
