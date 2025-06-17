@@ -90,25 +90,21 @@ output "sns_topic_arn" {
   value       = aws_sns_topic.lambda_errors.arn
 }
 
-output "staging_public_ip" {
-  description = "Public IP address of the staging EC2 instance"
-  value = aws_instance.staging.public_ip
+# --- EIP Outputs ---
+output "staging_ip" {
+  description = "Elastic IP (static) for the staging environment"
+  value       = aws_eip.staging_eip.public_ip
 }
 
-output "staging_public_dns" {
-  description = "Public DNS address of the staging EC2 instance"
-  value = aws_instance.staging.public_dns
+output "production_ip" {
+  description = "Elastic IP (static) for the production environment"
+  value       = aws_eip.production_eip.public_ip
 }
 
-output "production_public_ip" {
-  description = "Public IP address of the production EC2 instance"
-  value = aws_instance.production.public_ip
-}
+# (Opsional: jika ingin tahu allocation_id / association_id)
+# output "staging_eip_id"    { value = aws_eip.staging_eip.id }
+# output "production_eip_id" { value = aws_eip.production_eip.id }
 
-output "production_public_dns" {
-  description = "Public DNS address of the production EC2 instance"
-  value = aws_instance.production.public_dns
-}
 
 output "ci_trigger_status" {
   value = "CI/CD Pipeline trigger added after infra provisioning 🚀"

@@ -449,7 +449,21 @@ resource "aws_lambda_function" "book_library_lambda" {
 resource "aws_apigatewayv2_api" "api_books" {
   name          = "BooksAPI-${random_id.suffix.hex}"
   protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins     = [
+      "http://localhost:3000",
+      "http://${aws_eip.staging_eip.public_ip}:3000",
+      "http://${aws_eip.production_eip.public_ip}:3000",
+    ]
+    allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers     = ["Content-Type", "Authorization"]
+    expose_headers    = ["Authorization"]
+    max_age           = 86400
+    allow_credentials = true
+  }
 }
+
 
 resource "aws_apigatewayv2_stage" "api_books_stage" {
   api_id      = aws_apigatewayv2_api.api_books.id
@@ -811,6 +825,30 @@ resource "aws_instance" "production" {
     aws_iam_role_policy_attachment.attach_s3_policy
     # null_resource.trigger_ci_pipeline
   ]
+}
+
+# ───── EIP UNTUK MENJAGA IP TETAP ────────────────────────────────
+# Tambahkan blok ini PERSIS di bawah kedua EC2 (atau di file lain)
+resource "aws_eip" "staging_eip" {
+  instance = aws_instance.staging.id
+  vpc      = true
+
+  tags = {
+    Name        = "staging-eip"
+    Environment = "staging"
+    Project     = var.project_name
+  }
+}
+
+resource "aws_eip" "production_eip" {
+  instance = aws_instance.production.id
+  vpc      = true
+
+  tags = {
+    Name        = "production-eip"
+    Environment = "production"
+    Project     = var.project_name
+  }
 }
 
 # Alternative: Multi-AZ deployment
