@@ -43,8 +43,8 @@ jobs:
           echo "artifact_bucket=$(jq -r '.artifact_bucket_name.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "cd_access_key_id=$(jq -r '.cd_access_key_id.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "cd_secret_access_key=$(jq -r '.cd_secret_access_key.value' tf_output.json)" >> "$GITHUB_OUTPUT"
-          echo "production_public_ip=$(jq -r '.production_public_ip.value' tf_output.json)" >> "$GITHUB_OUTPUT"
-          echo "staging_public_ip=$(jq -r '.staging_public_ip.value' tf_output.json)" >> "$GITHUB_OUTPUT"
+          echo "production_public_ip=$(jq -r '.production_ip.value' tf_output.json)" >> "$GITHUB_OUTPUT"
+          echo "staging_public_ip=$(jq -r '.staging_ip.value' tf_output.json)" >> "$GITHUB_OUTPUT"
           echo "production_public_dns=$(jq -r '.production_public_dns.value' tf_output.json)" >> "$GITHUB_OUTPUT"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

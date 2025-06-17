@@ -101,6 +101,16 @@ output "production_ip" {
   value       = aws_eip.production_eip.public_ip
 }
 
+output "staging_public_dns" {
+  description = "Public DNS for the staging environment"
+  value       = aws_instance.staging.public_dns
+}
+
+output "production_public_dns" {
+  description = "Public DNS for the production environment"  
+  value       = aws_instance.production.public_dns
+}
+
 # (Opsional: jika ingin tahu allocation_id / association_id)
 # output "staging_eip_id"    { value = aws_eip.staging_eip.id }
 # output "production_eip_id" { value = aws_eip.production_eip.id }
