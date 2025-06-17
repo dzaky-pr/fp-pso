@@ -5,23 +5,23 @@ import Link from "next/link";
 import { useState } from "react";
 import { FiPlus } from "react-icons/fi";
 import BookCard from "./BookCard";
-import SearchBar from "./SearchBar";
+// import SearchBar from "./SearchBar";
 
 export default function BookList({ books }: { books: IBook[] }) {
-  const [filteredBooks, setFilteredBooks] = useState<IBook[]>(books);
+  // const [filteredBooks, setFilteredBooks] = useState<IBook[]>(books);
 
-  const handleSearch = (query: string) => {
-    const filtered = books.filter(
-      (book) =>
-        book.title.toLowerCase().includes(query.toLowerCase()) ||
-        book.author.toLowerCase().includes(query.toLowerCase()),
-    );
-    setFilteredBooks(filtered);
-  };
+  // const handleSearch = (query: string) => {
+  //   const filtered = books.filter(
+  //     (book) =>
+  //       book.title.toLowerCase().includes(query.toLowerCase()) ||
+  //       book.author.toLowerCase().includes(query.toLowerCase()),
+  //   );
+  //   setFilteredBooks(filtered);
+  // };
 
   return (
     <>
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <SearchBar onSearch={handleSearch} />
       </div>
 
@@ -51,7 +51,20 @@ export default function BookList({ books }: { books: IBook[] }) {
             <FiPlus size={24} />
           </button>
         </Link>
-      </div>
+      </div> */}
+      {books.length === 0 ? (
+  <div className="text-center py-12">
+    <p className="text-gray-600 dark:text-gray-400 text-lg">
+      No books available. Add some books to get started!
+    </p>
+  </div>
+) : (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+    {books.map((book, idx) => (
+      <BookCard key={idx} book={book} />
+    ))}
+  </div>
+)}
     </>
   );
 }
