@@ -12,7 +12,7 @@ const API_URL = process.env.AWS_API_URL || "http://localhost:3001/api";
 const uniqueSuffix = Date.now();
 const email = `searchuser-${uniqueSuffix}@example.com`;
 const password = "password123";
-const title = "Day in a life as Dzaky";
+const title = `Day in a life as Dzaky-${uniqueSuffix}`;
 
 // Register user and add a public book before tests, clean up after
 

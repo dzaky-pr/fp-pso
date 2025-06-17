@@ -12,9 +12,9 @@ const API_URL = process.env.AWS_API_URL || "http://localhost:3001/api";
 const uniqueSuffix = Date.now();
 const email1 = `testuser1-${uniqueSuffix}@example.com`;
 const email2 = `testuser2-${uniqueSuffix}@example.com`;
-const title1 = "The Great Gatsby";
-const title2 = "To Kill a Mockingbird"; //private book
-const title3 = "1984";
+const title1 = `The Great Gatsby ${uniqueSuffix}`;
+const title2 = `To Kill a Mockingbird ${uniqueSuffix}`; //private book
+const title3 = `1984 ${uniqueSuffix}`;
 
 test.describe("Visibility E2E", () => {
   test.beforeAll(async ({ browser }) => {

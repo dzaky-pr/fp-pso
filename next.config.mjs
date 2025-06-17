@@ -14,6 +14,10 @@ const nextConfig = {
   env: {
     AWS_API_URL: process.env.AWS_API_URL,
   },
+  // Disabled image optimization with sharp
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;
