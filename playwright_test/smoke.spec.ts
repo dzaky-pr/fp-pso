@@ -165,12 +165,16 @@ test.describe("CRUD Buku via UI", () => {
 });
 
 test.describe("Log Out and delete account", () => {
-  test("Log out'", async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
+    // Pastikan pengguna sudah login sebelum test
     await page.goto(`${BASE_URL}/login`);
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', "password123");
     await page.click('button[type="submit"]');
     await page.waitForURL(`${BASE_URL}/`);
+  });
+
+  test("Log out'", async ({ page }) => {
     // Navigasi ke halaman About
     await page.goto(`${BASE_URL}/`);
     // Verifikasi judul halaman
