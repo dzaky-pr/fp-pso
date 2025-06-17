@@ -209,7 +209,6 @@ resource "aws_s3_object" "lambda_code_upload" {
   bucket = aws_s3_bucket.lambda_bucket.id
   key    = "lambda_package.zip"
   source = data.archive_file.lambda_zip.output_path
-  etag   = filemd5(data.archive_file.lambda_zip.output_path)
 }
 # ----------------
 
@@ -452,16 +451,12 @@ resource "aws_apigatewayv2_api" "api_books" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins     = [
-      "http://localhost:3000",
-      "http://${aws_eip.staging_eip.public_ip}:3000",
-      "http://${aws_eip.production_eip.public_ip}:3000",
-    ]
+    allow_origins     = ["*"]
     allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     allow_headers     = ["Content-Type", "Authorization"]
     expose_headers    = ["Authorization"]
     max_age           = 86400
-    allow_credentials = true
+    allow_credentials = false
   }
 }
 
@@ -824,7 +819,7 @@ resource "aws_instance" "production" {
 # Tambahkan blok ini PERSIS di bawah kedua EC2 (atau di file lain)
 resource "aws_eip" "staging_eip" {
   instance = aws_instance.staging.id
-  vpc      = true
+  domain = "vpc"
 
   tags = {
     Name        = "staging-eip"
@@ -835,7 +830,7 @@ resource "aws_eip" "staging_eip" {
 
 resource "aws_eip" "production_eip" {
   instance = aws_instance.production.id
-  vpc      = true
+  domain = "vpc"
 
   tags = {
     Name        = "production-eip"
