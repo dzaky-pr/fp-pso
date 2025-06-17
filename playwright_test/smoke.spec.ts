@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 const uniqueSuffix = Date.now();
 const email = `e2eCRUDuser-${uniqueSuffix}@example.com`;
 const BASE_URL = process.env.SMOKE_UI_URL || "http://localhost:3000";
+const API_URL = process.env.AWS_API_URL || "http://localhost:3001/api";
 
 let bookAdded = false;
 let bookEdited = false;
@@ -186,7 +187,7 @@ test.describe("Log Out and delete account", () => {
   });
 
   test("Delete account", async ({ page }) => {
-    const res = await fetch("http://localhost:3001/api/account", {
+    const res = await fetch(`${API_URL}/account`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: email }),

@@ -133,6 +133,7 @@ jobs:
           npm run smoke
         env:
           SMOKE_UI_URL: http://${{ steps.tf_output.outputs.staging_public_ip }}:3000
+          AWS_API_URL: ${{ steps.tf_output.outputs.api_gateway_url }}
 
       - name: 🖥 Deploy to EC2 via SSH Script
         if: steps.staging_smoke_tests.outcome == 'success'
@@ -202,6 +203,7 @@ jobs:
           npm run smoke
         env:
           SMOKE_UI_URL: http://${{ steps.tf_output.outputs.production_public_ip }}:3000
+          AWS_API_URL: ${{ steps.tf_output.outputs.api_gateway_url }}
 
       - name: 🧾 Add deployment info to summary
         if: steps.production_smoke_tests.outcome == 'success'

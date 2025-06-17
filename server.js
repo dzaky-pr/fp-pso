@@ -34,8 +34,6 @@ const convertToAPIGatewayEvent = (req) => {
     routeKey = "POST /register";
   } else if (method === "POST" && path === "/api/login") {
     routeKey = "POST /login";
-  } else if (method === "POST" && path === "/api/login") {
-    routeKey = "POST /login";
   } else if (method === "DELETE" && path === "/api/account") {
     routeKey = "DELETE /account";
   } else if (method === "GET" && path === "/api/my-books") {
