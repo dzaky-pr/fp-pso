@@ -574,8 +574,8 @@ resource "aws_lambda_permission" "allow_api_delete_account" {
   source_arn    = "${aws_apigatewayv2_api.api_books.execution_arn}/*/*/account"
 }
 
-resource "aws_lambda_permission" "allow_api_delete_account" {
-  statement_id  = "AllowDeleteAccountAPIInvoke"
+resource "aws_lambda_permission" "allow_api_my_books" {
+  statement_id  = "AllowMyBooksAccountAPIInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.book_library_lambda.function_name
   principal     = "apigateway.amazonaws.com"
