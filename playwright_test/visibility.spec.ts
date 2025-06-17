@@ -18,6 +18,7 @@ const title3 = `1984 ${uniqueSuffix}`;
 
 test.describe("Visibility E2E", () => {
   test.beforeAll(async ({ browser }) => {
+    test.setTimeout(30000);
     const page = await browser.newPage();
     await register(page, email1, "password123");
     await register(page, email2, "password123");
@@ -112,6 +113,7 @@ test.describe("Visibility E2E", () => {
   });
 
   test.afterAll(async ({ browser }) => {
+    test.setTimeout(30000);
     const page = await browser.newPage();
     await login(page, email1, "password123");
     await removeBook(page, title1);
