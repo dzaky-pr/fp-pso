@@ -1,7 +1,6 @@
 "use client";
 
 import { getUserEmailFromToken, isAuthenticated, logout } from "@/actions/auth";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -66,16 +65,9 @@ function Header() {
   };
 
   return (
-    <header className="relative py-3.5 px-4 md:px-10 shadow-md dark:shadow-slate-800 transition-colors duration-300">
+    <header className="sticky top-0 z-50 bg-white py-3.5 px-4 md:px-10 shadow-md dark:shadow-slate-800 transition-colors duration-300">
       <div className="flex justify-between items-center">
         <h1 className="flex items-center text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
-          <Image
-            src="/image/library.png"
-            width={40}
-            height={40}
-            alt="Book Library"
-            className="mr-2 md:mr-3"
-          />
           <Link href="/">
             <span className="hidden sm:inline">Book Library</span>
             <span className="sm:hidden">Library</span>

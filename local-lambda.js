@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
+const { getDefaultCorsHeaders } = require("./shared/cors-config.js");
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const {
   DynamoDBDocumentClient,
   ScanCommand,
 } = require("@aws-sdk/lib-dynamodb");
-const { getDefaultCorsHeaders } = require("./shared/cors-config");
 const {
   getBook,
   getAllBooks,
