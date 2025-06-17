@@ -37,7 +37,11 @@ test.describe("Login and Register", () => {
     // 4) Verifikasi redirect ke homepage
     await page.waitForURL(`${BASE_URL}/`);
     expect(page.url()).toBe(`${BASE_URL}/`);
-    await expect(page.locator("h2")).toHaveText(/Explore Our Collections/i);
+    // await expect(page.locator("h2")).toHaveText(/Explore Our Collections/i);
+    const menuButton = page.locator(
+      `button[aria-label="Toggle Profile Menu"]:has-text("${email}")`,
+    );
+    await expect(menuButton).toBeVisible();
   });
 });
 
