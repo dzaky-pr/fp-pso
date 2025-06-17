@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { getDefaultCorsHeaders } = require("./shared/cors-config.js");
+const { getDefaultCorsHeaders } = require("./terraform/cors-config.js");
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const {
   DynamoDBDocumentClient,
@@ -81,7 +81,7 @@ const handler = async (event) => {
         const bookToDelete = await getBook(
           dynamo,
           tablename,
-          pathParameters.id,
+          pathParameters.id
         );
         if (
           !bookToDelete.ownerId ||
