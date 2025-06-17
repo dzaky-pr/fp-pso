@@ -1,33 +1,51 @@
 import { expect, test } from "@playwright/test";
+import {
+  addBook,
+  deleteUser,
+  login,
+  register,
+  removeBook,
+} from "./e2e-helpers";
 
-const BASE_URL = process.env.SMOKE_UI_URL || "http://localhost:3000";
-const email = "test@example.com";
-const title = "The Great Gatsby";
+const _BASE_URL = process.env.SMOKE_UI_URL || "http://localhost:3000";
+const API_URL = process.env.AWS_API_URL || "http://localhost:3001/api";
+const uniqueSuffix = Date.now();
+const email = `searchuser-${uniqueSuffix}@example.com`;
+const password = "password123";
+const title = "Day in a life as Dzaky";
+
+// Register user and add a public book before tests, clean up after
 
 test.describe("Search for the new book (Detailed)", () => {
-  // Sebelum setiap test pencarian, navigasi ke halaman utama
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await register(page, email, password);
+    await login(page, email, password);
+    await addBook(page, {
+      title,
+      author: "F. Scott Fitzgerald",
+      price: "10.99",
+      description: "A classic novel.",
+      isPrivate: false,
+    });
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
-    await page.goto(`${BASE_URL}/login`);
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', "password123");
-    await page.click('button[type="submit"]');
-    await page.waitForURL(`${BASE_URL}/`);
+    await login(page, email, password);
     await page.waitForSelector('[data-testid="book-card"]');
   });
 
   test("substring match: hasil memuat buku yang mengandung sebagian teks judul", async ({
     page,
   }) => {
-    // Kita gunakan 'Test Book' sebagai keyword, yang merupakan bagian dari originalTitle
-    const keyword = "Great";
+    const keyword = "Dzaky";
     await page.fill("#search-input", keyword);
     await page.press("#search-input", "Enter");
-    // Verifikasi bahwa kartu buku kita (yang mengandung publicTitle) terlihat
     const filteredCard = page.locator(
       `[data-testid="book-card"]:has-text("${title}")`,
     );
     await expect(filteredCard).toBeVisible();
-    // Verifikasi bahwa semua hasil yang tampil memang mengandung keyword
     const allResults = page.locator('[data-testid="book-card"]');
     for (const card of await allResults.all()) {
       await expect(card).toContainText(keyword, { ignoreCase: true });
@@ -37,11 +55,9 @@ test.describe("Search for the new book (Detailed)", () => {
   test("case-insensitive: search tidak peka huruf besar/kecil", async ({
     page,
   }) => {
-    // Gunakan sebagian judul buku dengan huruf kecil semua
-    const keyword = "great";
+    const keyword = "life";
     await page.fill("#search-input", keyword);
     await page.press("#search-input", "Enter");
-    // Verifikasi bahwa kartu buku kita tetap ditemukan
     const filteredCard = page.locator(
       `[data-testid="book-card"]:has-text("${title}")`,
     );
@@ -58,5 +74,13 @@ test.describe("Search for the new book (Detailed)", () => {
     await expect(cards).toHaveCount(0);
     const noResult = page.locator("text=No books found matching your search.");
     await expect(noResult).toBeVisible();
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page, email, password);
+    await removeBook(page, title);
+    await deleteUser(page, email, API_URL);
+    await page.close();
   });
 });

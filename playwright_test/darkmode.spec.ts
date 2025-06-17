@@ -1,27 +1,33 @@
 import { expect, test } from "@playwright/test";
+import { deleteUser, login, register } from "./e2e-helpers";
 
 // Ganti BASE_URL sesuai environment (ci/cd) ataupun localhost
 const BASE_URL = process.env.SMOKE_UI_URL || "http://localhost:3000";
+const API_URL = process.env.AWS_API_URL || "http://localhost:3001/api";
+const uniqueSuffix = Date.now();
+const email = `darkmodeuser-${uniqueSuffix}@example.com`;
+const password = "password123";
+
+const pages = [
+  { name: "Home", path: "/" },
+  { name: "Add Book", path: "/add" },
+  // NOTE: ubah "1" jadi ID yang valid jika butuh test detail;
+  // kalau belum ada buku, pakai ID random atau buat buku dulu
+  { name: "Book Detail", path: "/1" },
+  { name: "My Books", path: "/my-books" },
+  { name: "Login", path: "/login" },
+  { name: "Register", path: "/register" },
+];
 
 test.describe("Dark Mode Smoke Tests", () => {
-  const pages = [
-    { name: "Home", path: "/" },
-    { name: "Add Book", path: "/add" },
-    // NOTE: ubah "1234" jadi ID yang valid jika butuh test detail;
-    // kalau belum ada buku, pakai ID random atau buat buku dulu
-    { name: "Book Detail", path: "/1" },
-    { name: "My Books", path: "/my-books" },
-    { name: "Login", path: "/login" },
-    { name: "Register", path: "/register" },
-  ];
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await register(page, email, password);
+    await page.close();
+  });
 
   test.beforeEach(async ({ page }) => {
-    // Pastikan setiap test dimulai dari halaman utama
-    await page.goto(`${BASE_URL}/login`);
-    await page.fill('input[name="email"]', "user@example.com");
-    await page.fill('input[name="password"]', "password123");
-    await page.click('button[type="submit"]');
-    await page.waitForURL(`${BASE_URL}/`);
+    await login(page, email, password);
   });
 
   for (const { name, path } of pages) {
@@ -52,4 +58,10 @@ test.describe("Dark Mode Smoke Tests", () => {
       expect(theme2).toBe("light");
     });
   }
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await deleteUser(page, email, API_URL);
+    await page.close();
+  });
 });
