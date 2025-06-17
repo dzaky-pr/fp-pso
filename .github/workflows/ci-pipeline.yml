@@ -75,8 +75,21 @@ jobs:
           npm run lint
           npm run typecheck
 
-      - name: 🧪 Run Unit Tests
-        run: npm test -- --verbose
+      - name: 🧪 Run Tests & Generate Coverage
+        run: npm test -- --coverage --verbose
+
+      - name: 🧾 Show coverage files (Debug purpose)
+        run: ls -lh coverage && head -n 20 coverage/lcov.info
+
+      - name: 🔍 SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          args: >
+            -Dsonar.projectKey=dzaky-pr_fp-pso
+            -Dsonar.organization=dzaky-pr
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+        env:
+          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
       - name: 🏗 Setup .env
         run: |

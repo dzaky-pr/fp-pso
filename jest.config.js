@@ -31,4 +31,17 @@ module.exports = {
     ],
   },
   transformIgnorePatterns: ["node_modules/(?!(.*\\.mjs$))"],
+
+  /* ---------- Coverage settings ---------- */
+  collectCoverage: true, // aktifkan pelacakan coverage
+  coverageDirectory: "coverage", // semua output di ./coverage
+  coverageReporters: ["lcov", "text"], // LCOV untuk SonarCloud  ringkasan di log
+  collectCoverageFrom: [
+    "<rootDir>/**/*.{js,jsx,ts,tsx}",
+    "!**/*.d.ts",
+    "!**/*.{test,spec}.{js,jsx,ts,tsx}",
+    "!**/__tests__/**",
+    "!<rootDir>/.next/**",
+    "!<rootDir>/terraform/**",
+  ],
 };
