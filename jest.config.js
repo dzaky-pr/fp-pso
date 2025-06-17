@@ -45,6 +45,7 @@ module.exports = {
     "!**/*.d.ts",
     "!**/*.{test,spec}.{js,jsx,ts,tsx}",
     "!**/__tests__/**",
+    "!**/__mocks__/**",
     "!<rootDir>/.next/**",
     "!<rootDir>/node_modules/**",
     "!<rootDir>/coverage/**",
@@ -52,7 +53,6 @@ module.exports = {
     "!<rootDir>/shared/**", // Exclude shared utilities dari coverage
     "!<rootDir>/playwright_test/**",
     "!<rootDir>/test-results/**",
-    "!<rootDir>/__mocks__/**",
     "!<rootDir>/jest.*.js",
     "!<rootDir>/*.config.{js,ts,mjs}",
     "!<rootDir>/server.js", // Exclude development server
@@ -60,6 +60,9 @@ module.exports = {
     "!<rootDir>/app/layout.tsx", // Layout tidak perlu test coverage tinggi
     "!<rootDir>/app/globals.css",
     "!<rootDir>/app/favicon.ico",
+    "!<rootDir>/build/**",
+    "!<rootDir>/dist/**",
+    "!<rootDir>/scripts/**",
   ],
   coveragePathIgnorePatterns: [
     "/node_modules/",
@@ -68,6 +71,8 @@ module.exports = {
     "/terraform/",
     "/playwright_test/",
     "/test-results/",
+    "/__tests__/",
+    "/__mocks__/",
   ],
   coverageThreshold: {
     global: {
