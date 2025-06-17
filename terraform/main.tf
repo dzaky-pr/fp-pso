@@ -371,6 +371,7 @@ resource "aws_iam_policy" "lambda_policy" {
         Action = [
           "dynamodb:GetItem",
           "dynamodb:PutItem",
+          "dynamodb:DeleteItem", # Diperlukan untuk delete account
           "dynamodb:Scan",
           "dynamodb:Query" # Diperlukan untuk login via EmailIndex
         ]
