@@ -8,14 +8,13 @@ const getDefaultCorsHeaders = () => ({
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Credentials": "true",
 });
 
 // Production CORS configuration with allowed origins
 const getProductionCorsHeaders = (origin = "") => {
   const allowedOrigins = [
-    "http://localhost:3000",
-    "http://54.254.229.194:3000", // staging server
-    "http://54.169.147.138:3000", // production server
+    "*", // Allow all origins in production
   ];
 
   const headers = {
