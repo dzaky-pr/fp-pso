@@ -116,3 +116,6 @@ temp/
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov
+
+book-library-key
+book-library-key.pub

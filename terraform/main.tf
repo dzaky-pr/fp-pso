@@ -424,7 +424,7 @@ resource "aws_lambda_function" "book_library_lambda" {
 
   s3_bucket = aws_s3_bucket.lambda_bucket.id
   s3_key    = aws_s3_object.lambda_code_upload.key
-  source_code_hash = filebase64sha256("${path.module}/build/lambda_package.zip")
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   environment {
     variables = {
