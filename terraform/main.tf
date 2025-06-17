@@ -599,14 +599,6 @@ resource "aws_lambda_permission" "allow_api_my_books" {
 
 # --- SNS Topic for Alerts ---
 
-resource "aws_sns_topic_subscription" "email_alerts" {
-  for_each  = toset(var.alert_emails)
-  topic_arn = aws_sns_topic.lambda_errors.arn
-  protocol  = "email"
-  endpoint  = each.value
-
-}
-
 resource "aws_sns_topic" "lambda_errors" {
   name = var.sns_topic_name
 }
