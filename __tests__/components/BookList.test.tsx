@@ -121,7 +121,6 @@
 //   });
 // });
 
-
 import { render, screen } from "@testing-library/react";
 import BookList from "../../components/BookList";
 import type { IBook } from "../../types";
@@ -133,8 +132,20 @@ jest.mock("../../components/BookCard", () => {
 });
 
 const mockBooks: IBook[] = [
-  { id: 1, title: "Book 1", author: "Author 1", price: 10, description: "Desc 1" },
-  { id: 2, title: "Book 2", author: "Author 2", price: 20, description: "Desc 2" },
+  {
+    id: 1,
+    title: "Book 1",
+    author: "Author 1",
+    price: 10,
+    description: "Desc 1",
+  },
+  {
+    id: 2,
+    title: "Book 2",
+    author: "Author 2",
+    price: 20,
+    description: "Desc 2",
+  },
 ];
 
 describe("BookList", () => {
@@ -147,7 +158,7 @@ describe("BookList", () => {
   it("shows empty state when no books provided", () => {
     render(<BookList books={[]} />);
     expect(
-      screen.getByText("No books available. Add some books to get started!")
+      screen.getByText("No books available. Add some books to get started!"),
     ).toBeTruthy();
   });
 });

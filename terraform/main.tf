@@ -451,12 +451,19 @@ resource "aws_apigatewayv2_api" "api_books" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins     = ["*"]
+    allow_origins = [
+      "http://${aws_eip.production_eip.public_dns}:3000",
+      "http://${aws_eip.staging_eip.public_dns}:3000",
+      "http://${aws_eip.production_eip.public_ip}:3000",
+      "http://${aws_eip.staging_eip.public_ip}:3000",
+      "http://localhost:3000",
+    ]
+
     allow_methods     = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     allow_headers     = ["Content-Type", "Authorization"]
     expose_headers    = ["Authorization"]
     max_age           = 86400
-    allow_credentials = false
+    allow_credentials = true
   }
 }
 

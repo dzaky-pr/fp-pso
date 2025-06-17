@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
-const { getProductionCorsHeaders } = require("./cors-config");
 const {
   getBook,
   getAllBooks,
@@ -36,9 +35,6 @@ const handler = async (event) => {
 
   let body;
   let statusCode = 200;
-
-  const origin = event.headers?.origin || event.headers?.Origin || "";
-  const headers = getProductionCorsHeaders(origin);
 
   try {
     let user = null;
@@ -165,7 +161,6 @@ const handler = async (event) => {
   return {
     statusCode,
     body: JSON.stringify(body),
-    headers,
   };
 };
 
