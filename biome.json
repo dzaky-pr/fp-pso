@@ -17,10 +17,17 @@
       "**/pnpm-lock.yaml",
       "**/dist",
       "**/build",
+      "**/coverage",
+      "**/test-results",
+      "**/playwright-report",
       "terraform/dist/**",
       "terraform/build/**",
       "terraform/lambda_build/**",
-      "**/*.zip"
+      "**/*.zip",
+      "**/*.tfstate",
+      "**/*.tfstate.backup",
+      ".next/**",
+      ".git/**"
     ]
   },
   "organizeImports": { "enabled": true },
@@ -106,9 +113,15 @@
       "**/.prettierrc.js",
       "**/dist/**",
       "**/build/**",
+      "**/coverage/**",
+      "**/test-results/**",
+      "**/playwright-report/**",
       "terraform/dist/**",
       "terraform/build/**",
-      "terraform/lambda_build/**"
+      "terraform/lambda_build/**",
+      "**/*.config.js",
+      "**/*.config.mjs",
+      "**/*.config.ts"
     ]
   },
   "javascript": {
@@ -167,6 +180,16 @@
             "noRedeclare": "off",
             "noUnsafeNegation": "off",
             "useGetterReturn": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["server.js", "local-lambda.js", "jest.setup.js"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsoleLog": "off"
           }
         }
       }

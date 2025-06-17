@@ -92,29 +92,17 @@ app.get("/health", (_req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`🚀 Local API server running on http://localhost:${PORT}`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`📝 API endpoints:`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   GET    http://localhost:${PORT}/api/books`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   GET    http://localhost:${PORT}/api/books/{id}`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   PUT    http://localhost:${PORT}/api/books`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   DELETE http://localhost:${PORT}/api/books/{id}`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   POST   http://localhost:${PORT}/api/register`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   POST   http://localhost:${PORT}/api/login`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   GET    http://localhost:${PORT}/api/my-books`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log(`   DELETE http://localhost:${PORT}/api/account`);
-  // biome-ignore lint/suspicious/noConsoleLog: <explanation>
   console.log();
 });
 

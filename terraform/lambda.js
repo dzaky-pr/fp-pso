@@ -1,225 +1,24 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-require-imports */
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { v4: uuidv4 } = require("uuid");
-
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
+const { getProductionCorsHeaders } = require("./cors-config");
 const {
-  DeleteCommand,
-  DynamoDBDocumentClient,
-  GetCommand,
-  PutCommand,
-  ScanCommand,
-  QueryCommand,
-} = require("@aws-sdk/lib-dynamodb");
+  getBook,
+  getAllBooks,
+  getMyBooks,
+  putBook,
+  deleteBook,
+  getHealth,
+  registerUser,
+  loginUser,
+  deleteUserByEmail,
+  authenticate,
+} = require("./lambda-utils");
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
 const tablename = process.env.TABLE_NAME || "books";
 const usersTableName = process.env.USERS_TABLE_NAME || "users";
-const JWT_SECRET = process.env.JWT_SECRET;
-
-/* ──────────────────────────
-   CRUD helper
-────────────────────────── */
-const getBook = async (id) => {
-  const result = await dynamo.send(
-    new GetCommand({ TableName: tablename, Key: { id: Number(id) } }),
-  );
-  return result.Item || { message: "not found" };
-};
-
-const getAllBooks = async (user) => {
-  const params = {
-    TableName: tablename,
-  };
-
-  if (user && user.userId) {
-    params.FilterExpression =
-      "#isPrivate = :isPrivateFalse OR #ownerId = :userId";
-    params.ExpressionAttributeNames = {
-      "#isPrivate": "isPrivate",
-      "#ownerId": "ownerId",
-    };
-    params.ExpressionAttributeValues = {
-      ":isPrivateFalse": false,
-      ":userId": user.userId,
-    };
-  } else {
-    params.FilterExpression =
-      "attribute_not_exists(isPrivate) OR #isPrivate = :isPrivateFalse";
-    params.ExpressionAttributeNames = { "#isPrivate": "isPrivate" };
-    params.ExpressionAttributeValues = { ":isPrivateFalse": false };
-  }
-
-  const result = await dynamo.send(new ScanCommand(params));
-  return result.Items;
-};
-
-const getMyBooks = async (user) => {
-  const result = await dynamo.send(
-    new ScanCommand({
-      TableName: tablename,
-      FilterExpression: "ownerId = :userId",
-      ExpressionAttributeValues: {
-        ":userId": user.userId,
-      },
-    }),
-  );
-  return result.Items;
-};
-
-const putBook = async (book, user) => {
-  await dynamo.send(
-    new PutCommand({
-      TableName: tablename,
-      Item: {
-        id: Number(book.id),
-        price: book.price,
-        author: book.author,
-        description: book.description,
-        title: book.title,
-        isPrivate: book.isPrivate || false,
-        ownerId: user.userId,
-      },
-    }),
-  );
-  return `PUT book ${book.id}`;
-};
-
-const deleteBook = async (id) => {
-  await dynamo.send(
-    new DeleteCommand({ TableName: tablename, Key: { id: Number(id) } }),
-  );
-  return `Deleted Book ${id}`;
-};
-
-const getHealth = async () => {
-  return { status: "ok" };
-};
-
-/* ──────────────────────────
-   Auth helper functions
-────────────────────────── */
-const registerUser = async (email, password) => {
-  const existingUser = await dynamo.send(
-    new ScanCommand({
-      TableName: usersTableName,
-      FilterExpression: "email = :email",
-      ExpressionAttributeValues: {
-        ":email": email,
-      },
-    }),
-  );
-
-  if (existingUser.Items && existingUser.Items.length > 0) {
-    throw new Error("User with this email already exists.");
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  const userId = uuidv4();
-  const now = Date.now();
-
-  await dynamo.send(
-    new PutCommand({
-      TableName: usersTableName,
-      Item: {
-        userId,
-        email,
-        passwordHash,
-        createdAt: now,
-        updatedAt: now,
-      },
-    }),
-  );
-
-  return { userId, email, message: "Registration Successful" };
-};
-
-const loginUser = async (email, password) => {
-  const result = await dynamo.send(
-    new QueryCommand({
-      TableName: usersTableName,
-      IndexName: "EmailIndex",
-      KeyConditionExpression: "email = :email",
-      ExpressionAttributeValues: {
-        ":email": email,
-      },
-    }),
-  );
-
-  const user = result.Items && result.Items[0];
-
-  if (!user) {
-    throw new Error("Invalid credentials");
-  }
-
-  const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-
-  if (!isPasswordValid) {
-    throw new Error("Invalid credentials");
-  }
-
-  const token = jwt.sign(
-    { userId: user.userId, email: user.email },
-    JWT_SECRET,
-    {
-      expiresIn: "1h",
-    },
-  );
-
-  return {
-    userId: user.userId,
-    email: user.email,
-    token,
-    message: "Login successful",
-  };
-};
-
-const deleteUserByEmail = async (email) => {
-  // Cari userId berdasarkan email
-  const result = await dynamo.send(
-    new QueryCommand({
-      TableName: usersTableName,
-      IndexName: "EmailIndex",
-      KeyConditionExpression: "email = :email",
-      ExpressionAttributeValues: { ":email": email },
-      Limit: 1,
-    }),
-  );
-  const user = result.Items && result.Items[0];
-  if (!user) throw new Error("User not found");
-  await dynamo.send(
-    new DeleteCommand({
-      TableName: usersTableName,
-      Key: { userId: user.userId },
-    }),
-  );
-  return { message: "Account deleted by email" };
-};
-
-/* ──────────────────────────
-   Authentication Middleware
-────────────────────────── */
-const authenticate = (event) => {
-  const authHeader =
-    event.headers?.Authorization || event.headers?.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new Error(
-      "Authorization header missing or malformed (Expected: Bearer <token>).",
-    );
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    return decoded;
-  } catch (_err) {
-    throw new Error("Invalid or expired authentication token.");
-  }
-};
 
 /* ──────────────────────────
    Lambda handler
@@ -238,25 +37,8 @@ const handler = async (event) => {
   let body;
   let statusCode = 200;
 
-  // Allowed origins for CORS
-  const allowedOrigins = [
-    "http://localhost:3000",
-    "http://54.254.229.194:3000", // staging server
-    "http://54.169.147.138:3000", // production server
-  ];
-
   const origin = event.headers?.origin || event.headers?.Origin || "";
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  // Set CORS headers dynamically based on request origin
-  if (allowedOrigins.includes(origin)) {
-    headers["Access-Control-Allow-Origin"] = origin;
-    headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-    headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
-    headers["Access-Control-Allow-Credentials"] = "true";
-  }
+  const headers = getProductionCorsHeaders(origin);
 
   try {
     let user = null;
@@ -264,13 +46,17 @@ const handler = async (event) => {
       if (event.headers?.Authorization || event.headers?.authorization) {
         user = authenticate(event);
       }
-    } catch (_e) {
-      // Biarkan error token tidak menghentikan proses untuk rute publik
+    } catch (e) {
+      void e; // Ignore authentication errors for public routes
     }
 
     switch (event.routeKey) {
       case "GET /books/{id}": {
-        const bookData = await getBook(event.pathParameters.id);
+        const bookData = await getBook(
+          dynamo,
+          tablename,
+          event.pathParameters.id,
+        );
         if (bookData.message === "not found") {
           body = bookData;
           statusCode = 404;
@@ -286,25 +72,29 @@ const handler = async (event) => {
         break;
       }
       case "GET /books":
-        body = await getAllBooks(user);
+        body = await getAllBooks(dynamo, tablename, user);
         break;
 
       case "GET /my-books": {
         if (!user) {
           throw new Error("Authentication required to access My Books.");
         }
-        body = await getMyBooks(user);
+        body = await getMyBooks(dynamo, tablename, user);
         break;
       }
       case "PUT /books": {
         const currentUser = authenticate(event);
         const data = JSON.parse(event.body);
-        body = await putBook(data, currentUser);
+        body = await putBook(dynamo, tablename, data, currentUser);
         break;
       }
       case "DELETE /books/{id}": {
         const currentUser = authenticate(event);
-        const bookToDelete = await getBook(event.pathParameters.id);
+        const bookToDelete = await getBook(
+          dynamo,
+          tablename,
+          event.pathParameters.id,
+        );
         if (
           !bookToDelete.ownerId ||
           bookToDelete.ownerId !== currentUser.userId
@@ -314,27 +104,27 @@ const handler = async (event) => {
             "You are not the owner of this book and cannot delete it.",
           );
         }
-        body = await deleteBook(event.pathParameters.id);
+        body = await deleteBook(dynamo, tablename, event.pathParameters.id);
         break;
       }
       case "POST /register": {
         const { email, password } = JSON.parse(event.body);
-        body = await registerUser(email, password);
+        body = await registerUser(dynamo, usersTableName, email, password);
         statusCode = 201;
         break;
       }
       case "POST /login": {
         const { email, password } = JSON.parse(event.body);
-        body = await loginUser(email, password);
+        body = await loginUser(dynamo, usersTableName, email, password);
         break;
       }
       case "DELETE /account": {
         const { email } = JSON.parse(event.body);
-        body = await deleteUserByEmail(email);
+        body = await deleteUserByEmail(dynamo, usersTableName, email);
         break;
       }
       case "GET /health":
-        body = await getHealth();
+        body = getHealth();
         break;
       case "OPTIONS /books":
       case "OPTIONS /books/{id}":
