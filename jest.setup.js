@@ -91,20 +91,32 @@ global.beforeEach(() => {
   // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
   // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
   jest.spyOn(console, "warn").mockImplementation(() => {});
-  // Mock localStorage untuk tes
-  Object.defineProperty(window, "localStorage", {
-    value: {
-      getItem: jest.fn(() => null), // Default: tidak terautentikasi
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-      clear: jest.fn(),
-      length: 0,
-      key: jest.fn(),
-    },
-    writable: true,
-  });
 });
 
 global.afterEach(() => {
   jest.restoreAllMocks();
+});
+
+// Mock localStorage globally with a proper implementation
+const localStorageMock = (() => {
+  let store = {};
+  return {
+    getItem: jest.fn((key) => store[key] || null),
+    setItem: jest.fn((key, value) => {
+      store[key] = value.toString();
+    }),
+    removeItem: jest.fn((key) => {
+      delete store[key];
+    }),
+    clear: jest.fn(() => {
+      store = {};
+    }),
+    length: 0,
+    key: jest.fn(),
+  };
+})();
+
+Object.defineProperty(window, "localStorage", {
+  value: localStorageMock,
+  writable: true,
 });
