@@ -21,6 +21,7 @@ const pages = [
 
 test.describe("Dark Mode Smoke Tests", () => {
   test.beforeAll(async ({ browser }) => {
+    test.setTimeout(30000);
     const page = await browser.newPage();
     await register(page, email, password);
     await page.close();
@@ -60,6 +61,7 @@ test.describe("Dark Mode Smoke Tests", () => {
   }
 
   test.afterAll(async ({ browser }) => {
+    test.setTimeout(30000);
     const page = await browser.newPage();
     await deleteUser(page, email, API_URL);
     await page.close();

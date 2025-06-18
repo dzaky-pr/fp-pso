@@ -18,6 +18,7 @@ const title = `Day in a life as Dzaky-${uniqueSuffix}`;
 
 test.describe("Search for the new book (Detailed)", () => {
   test.beforeAll(async ({ browser }) => {
+    test.setTimeout(30000);
     const page = await browser.newPage();
     await register(page, email, password);
     await login(page, email, password);
@@ -77,6 +78,7 @@ test.describe("Search for the new book (Detailed)", () => {
   });
 
   test.afterAll(async ({ browser }) => {
+    test.setTimeout(30000);
     const page = await browser.newPage();
     await login(page, email, password);
     await removeBook(page, title);
