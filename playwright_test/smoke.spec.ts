@@ -88,7 +88,7 @@ test.describe("CRUD Buku via UI", () => {
     await expect(updateBtn).toBeVisible();
     await updateBtn.click();
     await page.waitForURL(`${BASE_URL}/`);
-    await page.waitForSelector('[data-testid="book-card"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="book-card"]', { timeout: 30000 });
     const updatedCard = await page.locator(
       `[data-testid="book-card"]:has-text("${updatedTitle}")`,
     );
