@@ -36,10 +36,29 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: jest.fn(),
   })),
 });
+
+// Mock window.alert untuk mengatasi error JSDOM
+Object.defineProperty(window, "alert", {
+  value: jest.fn(),
+  writable: true,
+});
+
+// Mock window.confirm dan window.prompt juga untuk kelengkapan
+Object.defineProperty(window, "confirm", {
+  value: jest.fn(() => true),
+  writable: true,
+});
+
+Object.defineProperty(window, "prompt", {
+  value: jest.fn(() => "mocked input"),
+  writable: true,
+});
 // --- AKHIR MOCK GLOBAL ---
 
 // Suppress JSDOM navigation errors and React warnings globally
 const originalError = console.error;
+const originalLog = console.log;
+
 console.error = (...args) => {
   const firstArg = args[0];
 
@@ -48,11 +67,12 @@ console.error = (...args) => {
     const message = firstArg;
     if (
       message.includes("Not implemented: navigation") ||
+      message.includes("Not implemented: window.alert") ||
       message.includes("Warning: An update to") ||
       message.includes(
         "Warning: The current testing environment is not configured to support act",
       ) ||
-      message.includes("invariant expected app router to be mounted") // Supress error ini
+      message.includes("invariant expected app router to be mounted")
     ) {
       return; // Supress error/peringatan spesifik ini
     }
@@ -64,36 +84,59 @@ console.error = (...args) => {
     const errorType = firstArg.type || "";
     if (
       errorMessage.includes("Not implemented: navigation") ||
+      errorMessage.includes("Not implemented: window.alert") ||
       errorType === "not implemented" ||
       errorMessage.includes("navigation (except hash changes)") ||
-      errorMessage.includes("invariant expected app router to be mounted") // Supress error ini
+      errorMessage.includes("invariant expected app router to be mounted")
     ) {
-      return; // Supress error navigasi JSDOM
+      return; // Supress error navigasi dan alert JSDOM
     }
   }
 
-  // Juga periksa apakah ada argumen yang berisi error navigasi JSDOM
+  // Juga periksa apakah ada argumen yang berisi error navigasi/alert JSDOM
   const argsString = args.join(" ");
   if (
     argsString.includes("Not implemented: navigation") ||
+    argsString.includes("Not implemented: window.alert") ||
     argsString.includes("navigateFetch") ||
     argsString.includes("HTMLHyperlinkElementUtils") ||
-    argsString.includes("invariant expected app router to be mounted") // Supress error ini
+    argsString.includes("invariant expected app router to be mounted")
   ) {
-    return; // Supress error terkait navigasi JSDOM
+    return; // Supress error terkait navigasi dan alert JSDOM
   }
 
   originalError.call(console, ...args);
 };
 
-// Supress console.warn untuk tes kecuali secara eksplisit diperlukan
+// Suppress console.log untuk debug statements kecuali dalam mode debug
+console.log = (...args) => {
+  const firstArg = args[0];
+
+  // Supress debug logs dari komponen tertentu
+  if (typeof firstArg === "string") {
+    if (
+      firstArg.includes("[AuthProtectedBookList]") ||
+      firstArg.includes("[DEBUG]") ||
+      firstArg.includes("[TEST]")
+    ) {
+      return; // Supress debug logging
+    }
+  }
+
+  // Jika tidak ada yang di-suppress, tampilkan log normal
+  originalLog.call(console, ...args);
+};
+
+// Suppress console.warn untuk tes kecuali secara eksplisit diperlukan
 global.beforeEach(() => {
-  // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
-  // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
-  jest.spyOn(console, "warn").mockImplementation(() => {});
+  // Mock console methods untuk test yang bersih
+  jest.spyOn(console, "warn").mockImplementation(() => {
+    // Intentionally empty to suppress console.warn output
+  });
 });
 
 global.afterEach(() => {
+  // Restore semua mocks setelah setiap test
   jest.restoreAllMocks();
 });
 

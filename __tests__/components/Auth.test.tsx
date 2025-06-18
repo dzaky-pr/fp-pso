@@ -6,15 +6,10 @@ import AuthRequiredWrapper from "../../components/AuthRequiredWrapper";
 import type { IBook } from "../../types";
 
 // Mock auth dan navigation
-jest.mock("../../actions/auth", () => ({
-  isAuthenticated: jest.fn(),
-}));
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
-}));
+jest.mock("../../actions/auth");
+jest.mock("next/navigation");
 jest.mock("../../components/BookList", () => {
   return function MockBookList({ books }: { books: IBook[] }) {
-    // <-- 2. Ganti any[] menjadi IBook[]
     return (
       <div data-testid="book-list">
         {books.map((book) => (
@@ -25,14 +20,26 @@ jest.mock("../../components/BookList", () => {
   };
 });
 
-const mockIsAuthenticated = isAuthenticated as jest.Mock;
-const mockUseRouter = useRouter as jest.Mock;
+// Type-safe mock setup
+const mockIsAuthenticated = jest.mocked(isAuthenticated);
+const mockUseRouter = jest.mocked(useRouter);
 const mockPush = jest.fn();
 
 describe("Auth Components", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseRouter.mockReturnValue({ push: mockPush });
+    mockUseRouter.mockReturnValue({
+      push: mockPush,
+      replace: jest.fn(),
+      refresh: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      prefetch: jest.fn(),
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe("AuthRequiredWrapper", () => {

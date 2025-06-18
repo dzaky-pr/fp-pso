@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { getDefaultCorsHeaders } = require("./terraform/cors-config.js");
+const { getDefaultCorsHeaders } = require("./shared/cors-config.js");
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const {
   DynamoDBDocumentClient,

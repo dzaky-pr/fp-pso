@@ -5,14 +5,8 @@ import { register } from "../../actions/auth";
 import RegisterPage from "../../app/register/page";
 
 // Mock dependencies
-jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
-}));
-
-jest.mock("../../actions/auth", () => ({
-  register: jest.fn(),
-}));
-
+jest.mock("next/navigation");
+jest.mock("../../actions/auth");
 jest.mock("../../components/Header", () => {
   return function MockHeader() {
     return <header data-testid="header">Header</header>;
@@ -70,10 +64,11 @@ jest.mock("../../components/AuthForm", () => ({
   ),
 }));
 
+// Type-safe mock setup
 const mockPush = jest.fn();
 const mockRefresh = jest.fn();
-const mockRegister = register as jest.Mock;
-const mockUseRouter = useRouter as jest.Mock;
+const mockRegister = jest.mocked(register);
+const mockUseRouter = jest.mocked(useRouter);
 
 describe("RegisterPage", () => {
   beforeEach(() => {
@@ -81,7 +76,20 @@ describe("RegisterPage", () => {
     mockUseRouter.mockReturnValue({
       push: mockPush,
       refresh: mockRefresh,
+      replace: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      prefetch: jest.fn(),
     });
+
+    // Setup window.alert mock untuk test ini
+    jest.spyOn(window, "alert").mockImplementation(() => {
+      // Intentionally empty to suppress window.alert in tests
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("renders register form", () => {
@@ -97,7 +105,7 @@ describe("RegisterPage", () => {
   });
 
   it("handles successful registration", async () => {
-    mockRegister.mockResolvedValue({ success: true });
+    mockRegister.mockResolvedValue({ success: true, data: null });
     const user = userEvent.setup();
 
     render(<RegisterPage />);
@@ -150,7 +158,7 @@ describe("RegisterPage", () => {
     mockRegister.mockImplementation(
       () =>
         new Promise((resolve) =>
-          setTimeout(() => resolve({ success: true }), 100),
+          setTimeout(() => resolve({ success: true, data: null }), 100),
         ),
     );
     const user = userEvent.setup();
