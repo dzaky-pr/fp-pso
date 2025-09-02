@@ -47,7 +47,7 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.2.2",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@playwright/test": "^1.52.0",
